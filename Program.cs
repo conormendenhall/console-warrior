@@ -1,8 +1,10 @@
 ﻿public class Hero
 {
     public string Name { get; set; } = "Nameless Warrior";
+    public int MaxHP { get; set; } = 5;
     public int HP { get; set; } = 5;
     public int Gold { get; set; }
+    public int FelledFoes { get; set; }
 
     public Hero(string? name)
     {
@@ -35,8 +37,27 @@ public class Program
 
         Console.WriteLine($"Well met, {hero.Name}.");
 
+        Random random = new Random();
+
         while (hero.HP > 0)
         {
+            if (hero.HP < hero.MaxHP)
+            {
+                var restHP = random.Next(1, 3);
+                Console.WriteLine($"You rest and restore {restHP} hit points.");
+
+                if (hero.HP + restHP <= hero.MaxHP)
+                {
+                    hero.HP += restHP;
+                }
+                else
+                {
+                    hero.HP = 5;
+                }
+
+                Console.WriteLine($"[hero has {hero.HP} HP]");
+            }
+
             Console.WriteLine("You encounter a Goblin.");
             var goblin = new Goblin(hp: 5);
 
@@ -44,7 +65,6 @@ public class Program
             {
                 Console.WriteLine("You attack!");
 
-                Random random = new Random();
                 var atkDmg = random.Next(5);
 
                 Console.WriteLine($"You deal {atkDmg} damage.");
@@ -56,6 +76,7 @@ public class Program
                 {
                     Console.WriteLine("The goblin falls dead at your feet.");
                     Console.WriteLine($"{hero.Name} stands victorious!");
+                    hero.FelledFoes += 1;
 
                     var loot = random.Next(5);
                     Console.WriteLine($"You loot the goblin for {loot} gold pieces. You drop them into your coinpurse.");
@@ -78,6 +99,7 @@ public class Program
                     {
                         Console.WriteLine("The goblin strikes you down.");
                         Console.WriteLine($"{hero.Gold} gold pieces spill out of your coinpurse.");
+                        Console.WriteLine($"You felled {hero.FelledFoes} foes before meeting your end.");
                         Console.WriteLine($"Rest in peace, {hero.Name}.");
                     }
                     else
