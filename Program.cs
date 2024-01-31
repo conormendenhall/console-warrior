@@ -1,6 +1,8 @@
 ﻿using Spectre.Console;
 
-public class Program
+namespace ConsoleWarrior;
+
+static class Program
 {
     public static void Main(string[] args)
     {
@@ -9,40 +11,19 @@ public class Program
         var warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
         var hero = new Hero(warriorName);
 
-        AnsiConsole.Markup($"Well met, [red]{hero.Name}[/].\n");
-
-        Random random = new Random();
+        AnsiConsole.Markup($"Well met, [red]{hero.Name}[/].\n\n");
 
         while (hero.HP > 0)
         {
-            if (hero.HP < hero.MaxHP)
-            {
-                var restHP = random.Next(1, 3);
+            hero.Rest();
 
-                if (hero.HP + restHP <= hero.MaxHP)
-                {
-                    hero.HP += restHP;
-                    Console.WriteLine($"You rest and restore {restHP} HP.");
-                }
-                else
-                {
-                    hero.HP = 5;
-                    Console.WriteLine($"You rest and feel fully restored.");
-                }
-                Console.WriteLine($"You have {hero.HP} HP.\n");
-            }
-
-            AnsiConsole.Markup($"You encounter a [chartreuse3]goblin[/].");
-            var goblin = new Goblin(hp: 5);
+            AnsiConsole.Markup($"You encounter a [chartreuse3]goblin[/].\n");
+            var goblin = new Goblin();
 
             while (goblin.HP > 0 && hero.HP > 0)
             {
-                Console.WriteLine("You attack!");
-
-                var atkDmg = random.Next(5);
-
-                Console.WriteLine($"You deal {atkDmg} damage.");
-                goblin.HP -= atkDmg;
+                hero.Attack(goblin);
+                Console.WriteLine($"[goblin has {goblin.HP} HP]");
 
                 if (goblin.HP <= 0)
                 {
@@ -50,37 +31,126 @@ public class Program
                     Console.WriteLine($"{hero.Name} stands victorious!\n");
                     hero.FelledFoes += 1;
 
-                    var loot = random.Next(5);
-                    AnsiConsole.Markup($"You loot the [chartreuse3]goblin[/] for {loot} gold pieces. You drop them into your coinpurse.\n");
-                    hero.Gold += loot;
+                    var loot = hero.Loot(goblin);
+                    AnsiConsole.Markup($"You loot the [chartreuse3]goblin[/] for {loot} gold pieces. "
+                        + "You drop them into your coinpurse.\n");
                     Console.WriteLine($"You are carrying {hero.Gold} gold.\n");
                 }
                 else
                 {
-                    AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n");
-                    Console.WriteLine();
-
-                    AnsiConsole.Markup("The [chartreuse3]goblin[/] attacks!\n");
-                    var gobAtkDmg = random.Next(5);
-
-                    AnsiConsole.Markup($"The [chartreuse3]goblin[/] deals {gobAtkDmg} damage.\n");
-                    hero.HP -= gobAtkDmg;
-
+                    AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n\n");
+                    goblin.Attack(hero);
                     Console.WriteLine($"[hero has {hero.HP} HP]");
 
                     if (hero.HP <= 0)
                     {
-                        AnsiConsole.Markup("The [chartreuse3]goblin[/] strikes you down.\n");
+                        AnsiConsole.Markup("The [chartreuse3]goblin[/] strikes you down.\n\n");
                         Console.WriteLine($"{hero.Gold} gold pieces spill out of your coinpurse.");
                         Console.WriteLine($"You felled {hero.FelledFoes} foes before meeting your end.");
                         Console.WriteLine($"Rest in peace, {hero.Name}.");
                     }
                     else
                     {
-                        Console.WriteLine($"You are hurt but not dead yet. You steel your nerves for another attack.{Environment.NewLine}");
+                        Console.WriteLine($"You are hurt but not dead yet. "
+                            + "You steel your nerves for another attack.\n");
                     }
                 }
             }
         }
+    }
+}
+
+public class Hero : ICreature
+{
+    public string Name { get; set; } = "Nameless Warrior";
+    public int MaxHP { get; set; } = 5;
+    public int HP { get; set; } = 5;
+    public int AttackDie { get; set; } = 4;
+    public int Gold { get; set; }
+    public int FelledFoes { get; set; }
+
+    public Hero(string? name)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            Name = name;
+        }
+    }
+
+    public void Attack(ICreature creature)
+    {
+        AnsiConsole.Markup($"You attack!\n");
+
+        Random rdm = new();
+        var atkDmg = rdm.Next(1, AttackDie);
+        creature.HP -= atkDmg;
+
+        AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
+    }
+
+    public void Rest()
+    {
+        if (HP < MaxHP)
+        {
+            Random rdm = new();
+            var restHP = rdm.Next(1, 3);
+
+            if (HP + restHP <= MaxHP)
+            {
+                HP += restHP;
+                Console.WriteLine($"You rest and restore {restHP} HP.");
+            }
+            else
+            {
+                HP = 5;
+                Console.WriteLine($"You rest and feel fully restored.");
+            }
+            Console.WriteLine($"You have {HP} HP.\n");
+        }
+    }
+
+    public int Loot(ILootable lootable)
+    {
+        Gold += lootable.LootGP;
+
+        return lootable.LootGP;
+    }
+}
+
+public interface ICreature
+{
+    public int HP { get; set; }
+    public int AttackDie { get; set; }
+    public void Attack(ICreature creature);
+}
+
+public interface ILootable
+{
+    public int LootGP { get; }
+}
+
+public class Goblin : ICreature, ILootable
+{
+    public int HP { get; set; } = 5;
+    public int AttackDie { get; set; } = 4;
+    public int LootGP
+    {
+        get
+        {
+            Random rdm = new();
+            return rdm.Next(5);
+        }
+    }
+
+    public void Attack(ICreature creature)
+    {
+        AnsiConsole.Markup($"The [chartreuse3]goblin[/] attacks!\n");
+
+        Random rdm = new();
+
+        var atkDmg = rdm.Next(1, AttackDie);
+        creature.HP -= atkDmg;
+
+        AnsiConsole.Markup($"The [chartreuse3]goblin[/] deals {atkDmg} damage.\n");
     }
 }
