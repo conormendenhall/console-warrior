@@ -28,6 +28,7 @@ public abstract class Creature
 {
     public abstract int HP { get; set; }
     public abstract int AttackDie { get; set; }
+    public abstract int LootMax { get; }
 
     public int Attack(Creature foe)
     {
@@ -37,12 +38,22 @@ public abstract class Creature
 
         return atkDmg;
     }
+
+    public int LootGP
+    {
+        get
+        {
+            Random rdm = new();
+            return rdm.Next(LootMax);
+        }
+    }
 }
 
 public class Hero : Creature
 {
     public override int HP { get; set; } = 5;
     public override int AttackDie { get; set; } = 4;
+    public override int LootMax { get => Gold; }
     public string Name { get; set; } = "Nameless Warrior";
     public int MaxHP { get; set; } = 5;
     public int Gold { get; set; }
@@ -77,11 +88,11 @@ public class Hero : Creature
         }
     }
 
-    public int Loot(ILootable lootable)
+    public int Loot(Creature creature)
     {
-        Gold += lootable.LootGP;
+        Gold += creature.LootGP;
 
-        return lootable.LootGP;
+        return creature.LootGP;
     }
 
     public void Encounter(Goblin goblin)
@@ -129,23 +140,9 @@ public class Hero : Creature
     }
 }
 
-public interface ILootable
-{
-    public int LootMax { get; }
-    public int LootGP { get; }
-}
-
-public class Goblin : Creature, ILootable
+public class Goblin : Creature
 {
     public override int HP { get; set; } = 5;
     public override int AttackDie { get; set; } = 4;
-    public int LootMax { get; } = 5;
-    public int LootGP
-    {
-        get
-        {
-            Random rdm = new();
-            return rdm.Next(LootMax);
-        }
-    }
+    public override int LootMax { get; } = 5;
 }
