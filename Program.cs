@@ -19,43 +19,7 @@ static class Program
 
             AnsiConsole.Markup($"You encounter a [chartreuse3]goblin[/].\n");
             var goblin = new Goblin();
-
-            while (goblin.HP > 0 && hero.HP > 0)
-            {
-                hero.Attack(goblin);
-                Console.WriteLine($"[goblin has {goblin.HP} HP]");
-
-                if (goblin.HP <= 0)
-                {
-                    AnsiConsole.Markup($"The [chartreuse3]goblin[/] falls dead at your feet.\n");
-                    Console.WriteLine($"{hero.Name} stands victorious!\n");
-                    hero.FelledFoes += 1;
-
-                    var loot = hero.Loot(goblin);
-                    AnsiConsole.Markup($"You loot the [chartreuse3]goblin[/] for {loot} gold pieces. "
-                        + "You drop them into your coinpurse.\n");
-                    Console.WriteLine($"You are carrying {hero.Gold} gold.\n");
-                }
-                else
-                {
-                    AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n\n");
-                    goblin.Attack(hero);
-                    Console.WriteLine($"[hero has {hero.HP} HP]");
-
-                    if (hero.HP <= 0)
-                    {
-                        AnsiConsole.Markup("The [chartreuse3]goblin[/] strikes you down.\n\n");
-                        Console.WriteLine($"{hero.Gold} gold pieces spill out of your coinpurse.");
-                        Console.WriteLine($"You felled {hero.FelledFoes} foes before meeting your end.");
-                        Console.WriteLine($"Rest in peace, {hero.Name}.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"You are hurt but not dead yet. "
-                            + "You steel your nerves for another attack.\n");
-                    }
-                }
-            }
+            hero.Encounter(goblin);
         }
     }
 }
@@ -114,6 +78,46 @@ public class Hero : ICreature
         Gold += lootable.LootGP;
 
         return lootable.LootGP;
+    }
+
+    public void Encounter(Goblin goblin)
+    {
+        while (goblin.HP > 0 && HP > 0)
+        {
+            Attack(goblin);
+            Console.WriteLine($"[goblin has {goblin.HP} HP]");
+
+            if (goblin.HP <= 0)
+            {
+                AnsiConsole.Markup($"The [chartreuse3]goblin[/] falls dead at your feet.\n");
+                Console.WriteLine($"{Name} stands victorious!\n");
+                FelledFoes += 1;
+
+                var loot = Loot(goblin);
+                AnsiConsole.Markup($"You loot the [chartreuse3]goblin[/] for {loot} gold pieces. "
+                    + "You drop them into your coinpurse.\n");
+                Console.WriteLine($"You are carrying {Gold} gold.\n");
+            }
+            else
+            {
+                AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n\n");
+                goblin.Attack(this);
+                Console.WriteLine($"[hero has {HP} HP]");
+
+                if (HP <= 0)
+                {
+                    AnsiConsole.Markup("The [chartreuse3]goblin[/] strikes you down.\n\n");
+                    Console.WriteLine($"{Gold} gold pieces spill out of your coinpurse.");
+                    Console.WriteLine($"You felled {FelledFoes} foes before meeting your end.");
+                    Console.WriteLine($"Rest in peace, {Name}.");
+                }
+                else
+                {
+                    Console.WriteLine($"You are hurt but not dead yet. "
+                        + "You steel your nerves for another attack.\n");
+                }
+            }
+        }
     }
 }
 
