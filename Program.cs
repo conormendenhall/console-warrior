@@ -1,148 +1,135 @@
 ﻿using Spectre.Console;
 
-namespace ConsoleWarrior;
-
-static class Program
+namespace ConsoleWarrior
 {
-    public static void Main(string[] args)
+    public static class Program
     {
-        Console.WriteLine("Hello, Warrior!");
-
-        var warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
-        var hero = new Hero(warriorName);
-
-        AnsiConsole.Markup($"Well met, [red]{hero.Name}[/].\n\n");
-
-        while (hero.HP > 0)
+        public static void Main(string[] args)
         {
-            hero.Rest();
+            Console.WriteLine("Hello, Warrior!");
 
-            AnsiConsole.Markup($"You encounter a [chartreuse3]goblin[/].\n");
-            var goblin = new Goblin();
-            hero.Encounter(goblin);
+            var warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
+            var hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5, gold: 0);
+
+            AnsiConsole.Markup($"Well met, [{hero.Color}]{hero.Name}[/].\n\n");
+
+            while (hero.HP > 0)
+            {
+                hero.Rest();
+
+                var creature = new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 4, gold: 4);
+                AnsiConsole.Markup($"You encounter a [{creature.Color}]{creature.Name}[/].\n");
+                hero.Encounter(creature);
+            }
         }
     }
-}
 
-public abstract class Creature
-{
-    public abstract int HP { get; set; }
-    public abstract int AttackDie { get; set; }
-    public abstract int LootMax { get; }
-
-    public int Attack(Creature foe)
+    public class Creature
     {
-        Random rdm = new();
-        var atkDmg = rdm.Next(1, AttackDie);
-        foe.HP -= atkDmg;
+        public string Name { get; set; }
+        public string Color { get; set; }
+        public int HP { get; set; }
+        public int MaxHP { get; set; }
+        public int AttackDie { get; set; }
+        public int Gold { get; set; }
 
-        return atkDmg;
-    }
-
-    public int LootGP
-    {
-        get
-        {
-            Random rdm = new();
-            return rdm.Next(LootMax);
-        }
-    }
-}
-
-public class Hero : Creature
-{
-    public override int HP { get; set; } = 5;
-    public override int AttackDie { get; set; } = 4;
-    public override int LootMax { get => Gold; }
-    public string Name { get; set; } = "Nameless Warrior";
-    public int MaxHP { get; set; } = 5;
-    public int Gold { get; set; }
-    public int FelledFoes { get; set; }
-
-    public Hero(string? name)
-    {
-        if (!string.IsNullOrWhiteSpace(name))
+        public Creature(string name, string color, int maxHP, int attackDie, int gold)
         {
             Name = name;
+            Color = color;
+            HP = maxHP;
+            MaxHP = maxHP;
+            AttackDie = attackDie;
+            Gold = gold;
         }
-    }
 
-    public void Rest()
-    {
-        if (HP < MaxHP)
+        public int Attack(Creature foe)
         {
             Random rdm = new();
-            var restHP = rdm.Next(1, 3);
+            var atkDmg = rdm.Next(1, AttackDie);
+            foe.HP -= atkDmg;
 
-            if (HP + restHP <= MaxHP)
-            {
-                HP += restHP;
-                Console.WriteLine($"You rest and restore {restHP} HP.");
-            }
-            else
-            {
-                HP = 5;
-                Console.WriteLine($"You rest and feel fully restored.");
-            }
-            Console.WriteLine($"You have {HP} HP.\n");
+            return atkDmg;
         }
     }
 
-    public int Loot(Creature creature)
+    public class Hero : Creature
     {
-        Gold += creature.LootGP;
+        public int FelledFoes { get; set; }
 
-        return creature.LootGP;
-    }
+        public Hero(string name, string color, int maxHP, int attackDie, int gold)
+            : base(name, color, maxHP, attackDie, gold) { }
 
-    public void Encounter(Goblin goblin)
-    {
-        while (goblin.HP > 0 && HP > 0)
+        public void Rest()
         {
-            AnsiConsole.Markup($"You attack!\n");
-            var atkDmg = Attack(goblin);
-            AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
-            Console.WriteLine($"[goblin has {goblin.HP} HP]");
-
-            if (goblin.HP <= 0)
+            if (HP < MaxHP)
             {
-                AnsiConsole.Markup($"The [chartreuse3]goblin[/] falls dead at your feet.\n");
-                Console.WriteLine($"{Name} stands victorious!\n");
-                FelledFoes += 1;
+                Random rdm = new();
+                var restHP = rdm.Next(1, 3);
 
-                var loot = Loot(goblin);
-                AnsiConsole.Markup($"You loot the [chartreuse3]goblin[/] for {loot} gold pieces. "
-                    + "You drop them into your coinpurse.\n");
-                Console.WriteLine($"You are carrying {Gold} gold.\n");
-            }
-            else
-            {
-                AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n\n");
-                AnsiConsole.Markup("The [chartreuse3]goblin[/] attacks!\n");
-                var foeAtkDmg = goblin.Attack(this);
-                AnsiConsole.Markup($"The [chartreuse3]goblin[/] deals {foeAtkDmg} damage.\n");
-                Console.WriteLine($"[hero has {HP} HP]");
-
-                if (HP <= 0)
+                if (HP + restHP <= MaxHP)
                 {
-                    AnsiConsole.Markup("The [chartreuse3]goblin[/] strikes you down.\n\n");
-                    Console.WriteLine($"{Gold} gold pieces spill out of your coinpurse.");
-                    Console.WriteLine($"You felled {FelledFoes} foes before meeting your end.");
-                    Console.WriteLine($"Rest in peace, {Name}.");
+                    HP += restHP;
+                    Console.WriteLine($"You rest and restore {restHP} HP.");
                 }
                 else
                 {
-                    Console.WriteLine($"You are hurt but not dead yet. "
-                        + "You steel your nerves for another attack.\n");
+                    HP = MaxHP;
+                    Console.WriteLine($"You rest and feel fully restored.");
+                }
+                Console.WriteLine($"You have {HP} HP.\n");
+            }
+        }
+
+        public int Loot(Creature corpse)
+        {
+            Gold += corpse.Gold;
+
+            return corpse.Gold;
+        }
+
+        public void Encounter(Creature creature)
+        {
+            while (creature.HP > 0 && HP > 0)
+            {
+                AnsiConsole.Markup($"You attack!\n");
+                var atkDmg = Attack(creature);
+                AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
+                Console.WriteLine($"[{creature.Name} has {creature.HP} HP]");
+
+                if (creature.HP <= 0)
+                {
+                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] falls dead at your feet.\n");
+                    Console.WriteLine($"{Name} stands victorious!\n");
+                    FelledFoes += 1;
+
+                    var loot = Loot(creature);
+                    AnsiConsole.Markup($"You loot the [{creature.Color}]{creature.Name}[/] for {loot} gold pieces. "
+                        + "You drop them into your coinpurse.\n");
+                    Console.WriteLine($"You are carrying {Gold} gold.\n");
+                }
+                else
+                {
+                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] still stands, sneering at you.\n\n");
+                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] attacks!\n");
+                    var foeAtkDmg = creature.Attack(this);
+                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] deals {foeAtkDmg} damage.\n");
+                    Console.WriteLine($"[hero has {HP} HP]");
+
+                    if (HP <= 0)
+                    {
+                        AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] strikes you down.\n\n");
+                        Console.WriteLine($"{Gold} gold pieces spill out of your coinpurse.");
+                        Console.WriteLine($"You felled {FelledFoes} foes before meeting your end.");
+                        AnsiConsole.Markup($"Rest in peace, [{Color}]{Name}[/].\n");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"You are hurt but not dead yet. "
+                            + "You steel your nerves for another attack.\n");
+                    }
                 }
             }
         }
     }
-}
-
-public class Goblin : Creature
-{
-    public override int HP { get; set; } = 5;
-    public override int AttackDie { get; set; } = 4;
-    public override int LootMax { get; } = 5;
 }
