@@ -24,12 +24,27 @@ static class Program
     }
 }
 
-public class Hero : ICreature
+public abstract class Creature
 {
+    public abstract int HP { get; set; }
+    public abstract int AttackDie { get; set; }
+
+    public int Attack(Creature foe)
+    {
+        Random rdm = new();
+        var atkDmg = rdm.Next(1, AttackDie);
+        foe.HP -= atkDmg;
+
+        return atkDmg;
+    }
+}
+
+public class Hero : Creature
+{
+    public override int HP { get; set; } = 5;
+    public override int AttackDie { get; set; } = 4;
     public string Name { get; set; } = "Nameless Warrior";
     public int MaxHP { get; set; } = 5;
-    public int HP { get; set; } = 5;
-    public int AttackDie { get; set; } = 4;
     public int Gold { get; set; }
     public int FelledFoes { get; set; }
 
@@ -39,17 +54,6 @@ public class Hero : ICreature
         {
             Name = name;
         }
-    }
-
-    public void Attack(ICreature creature)
-    {
-        AnsiConsole.Markup($"You attack!\n");
-
-        Random rdm = new();
-        var atkDmg = rdm.Next(1, AttackDie);
-        creature.HP -= atkDmg;
-
-        AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
     }
 
     public void Rest()
@@ -84,7 +88,9 @@ public class Hero : ICreature
     {
         while (goblin.HP > 0 && HP > 0)
         {
-            Attack(goblin);
+            AnsiConsole.Markup($"You attack!\n");
+            var atkDmg = Attack(goblin);
+            AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
             Console.WriteLine($"[goblin has {goblin.HP} HP]");
 
             if (goblin.HP <= 0)
@@ -101,7 +107,9 @@ public class Hero : ICreature
             else
             {
                 AnsiConsole.Markup("The [chartreuse3]goblin[/] still stands, sneering at you.\n\n");
-                goblin.Attack(this);
+                AnsiConsole.Markup("The [chartreuse3]goblin[/] attacks!\n");
+                var foeAtkDmg = goblin.Attack(this);
+                AnsiConsole.Markup($"The [chartreuse3]goblin[/] deals {foeAtkDmg} damage.\n");
                 Console.WriteLine($"[hero has {HP} HP]");
 
                 if (HP <= 0)
@@ -121,40 +129,23 @@ public class Hero : ICreature
     }
 }
 
-public interface ICreature
-{
-    public int HP { get; set; }
-    public int AttackDie { get; set; }
-    public void Attack(ICreature creature);
-}
-
 public interface ILootable
 {
+    public int LootMax { get; }
     public int LootGP { get; }
 }
 
-public class Goblin : ICreature, ILootable
+public class Goblin : Creature, ILootable
 {
-    public int HP { get; set; } = 5;
-    public int AttackDie { get; set; } = 4;
+    public override int HP { get; set; } = 5;
+    public override int AttackDie { get; set; } = 4;
+    public int LootMax { get; } = 5;
     public int LootGP
     {
         get
         {
             Random rdm = new();
-            return rdm.Next(5);
+            return rdm.Next(LootMax);
         }
-    }
-
-    public void Attack(ICreature creature)
-    {
-        AnsiConsole.Markup($"The [chartreuse3]goblin[/] attacks!\n");
-
-        Random rdm = new();
-
-        var atkDmg = rdm.Next(1, AttackDie);
-        creature.HP -= atkDmg;
-
-        AnsiConsole.Markup($"The [chartreuse3]goblin[/] deals {atkDmg} damage.\n");
     }
 }
