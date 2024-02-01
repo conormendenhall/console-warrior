@@ -1,1 +1,3 @@
-# Project to play with text-based game development as a C# console app
+# Console Warrior
+
+A nano RPG
