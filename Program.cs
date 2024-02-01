@@ -11,7 +11,12 @@ namespace ConsoleWarrior
                 new FigletText(font, "Hello, Warrior!").LeftJustified().Color(Color.Red)
             );
 
-            string warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
+            var nameInput = AnsiConsole.Prompt(
+                new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
+            );
+            string warriorName = string.IsNullOrWhiteSpace(nameInput)
+                ? "Nameless Warrior"
+                : nameInput;
             var hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5);
 
             AnsiConsole.MarkupLine($"Well met, [{hero.Color}]{hero.Name}[/].\n");
@@ -21,14 +26,24 @@ namespace ConsoleWarrior
                 Creature foe = GetFoe(hero.FelledFoes);
                 bool heroSurvives = hero.Encounter(foe);
 
+                Pause();
+
                 if (heroSurvives)
                 {
                     if (hero.HP < hero.MaxHP)
                         hero.Rest();
+
+                    Pause();
+
                     hero.VisitMerchant();
+
+                    Pause();
                 }
                 else
                 {
+                    var rule = new Rule("Death");
+                    rule.Justification = Justify.Left;
+                    AnsiConsole.Write(rule);
                     AnsiConsole.MarkupLine(
                         $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
                     );
@@ -38,6 +53,11 @@ namespace ConsoleWarrior
                     AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
                 }
             } while (hero.HP > 0);
+        }
+
+        public static void Pause()
+        {
+            AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices("Proceed"));
         }
 
         public static Creature GetFoe(int felledFoes)
@@ -63,14 +83,14 @@ namespace ConsoleWarrior
                     break;
                 case <= 8:
                     foe.Name = "Manticore";
-                    foe.Color = "gold3";
+                    foe.Color = "darkgoldenrod";
                     foe.MaxHP = 15;
                     foe.AttackDie = 10;
                     foe.Gold = 8;
                     break;
                 case > 8:
                     foe.Name = "Lich";
-                    foe.Color = "blueviolet";
+                    foe.Color = "royalblue1";
                     foe.MaxHP = 18;
                     foe.AttackDie = 15;
                     foe.Gold = 8;
@@ -143,6 +163,10 @@ namespace ConsoleWarrior
 
         public void Rest()
         {
+            var rule = new Rule("[dodgerblue1]Rest[/]");
+            rule.Justification = Justify.Left;
+            AnsiConsole.Write(rule);
+
             Random rdm = new();
             int restHP = rdm.Next(1, 3);
 
@@ -168,6 +192,9 @@ namespace ConsoleWarrior
 
         public bool Encounter(Creature foe)
         {
+            var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]");
+            rule.Justification = Justify.Left;
+            AnsiConsole.Write(rule);
             AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].");
 
             do
@@ -228,6 +255,9 @@ namespace ConsoleWarrior
 
         public void VisitMerchant()
         {
+            var rule = new Rule("[blueviolet]Merchant[/]");
+            rule.Justification = Justify.Left;
+            AnsiConsole.Write(rule);
             AnsiConsole.MarkupLine("You encounter a [blueviolet]Merchant[/].");
             AnsiConsole.MarkupLine($"You have [orange1]{Gold} gold[/] pieces.");
 
