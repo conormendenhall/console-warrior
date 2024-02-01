@@ -9,56 +9,85 @@ namespace ConsoleWarrior
             Console.WriteLine("Hello, Warrior!");
 
             var warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
-            var hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5, gold: 0);
+            var hero = new Hero(
+                name: warriorName,
+                color: "red",
+                maxHP: 5,
+                attackDie: 5,
+                gold: 0,
+                isShielded: false
+            );
 
             AnsiConsole.Markup($"Well met, [{hero.Color}]{hero.Name}[/].\n\n");
 
-            while (hero.HP > 0)
+            do
             {
-                hero.Rest();
+                bool heroSurvives = hero.Encounter();
 
-                var creature = new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 4, gold: 4);
-                AnsiConsole.Markup($"You encounter a [{creature.Color}]{creature.Name}[/].\n");
-                hero.Encounter(creature);
-            }
+                if (heroSurvives)
+                {
+                    hero.Rest();
+                    hero.VisitMerchant();
+                }
+                else
+                {
+                    AnsiConsole.Markup(
+                        $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse.\n"
+                    );
+                    Console.WriteLine(
+                        $"You felled {hero.FelledFoes} foes before meeting your end."
+                    );
+                    AnsiConsole.Markup($"Rest in peace, [{hero.Color}]{hero.Name}[/].\n");
+                }
+            } while (hero.HP > 0);
         }
     }
 
-    public class Creature
+    public class Creature(
+        string name,
+        string color,
+        int maxHP,
+        int attackDie,
+        int gold,
+        bool isShielded = false
+    )
     {
-        public string Name { get; set; }
-        public string Color { get; set; }
-        public int HP { get; set; }
-        public int MaxHP { get; set; }
-        public int AttackDie { get; set; }
-        public int Gold { get; set; }
-
-        public Creature(string name, string color, int maxHP, int attackDie, int gold)
-        {
-            Name = name;
-            Color = color;
-            HP = maxHP;
-            MaxHP = maxHP;
-            AttackDie = attackDie;
-            Gold = gold;
-        }
+        public string Name { get; set; } = name;
+        public string Color { get; set; } = color;
+        public int HP { get; set; } = maxHP;
+        public int MaxHP { get; set; } = maxHP;
+        public int AttackDie { get; set; } = attackDie;
+        public int Gold { get; set; } = gold;
+        public bool IsShielded { get; set; } = isShielded;
 
         public int Attack(Creature foe)
         {
             Random rdm = new();
             var atkDmg = rdm.Next(1, AttackDie);
+
+            if (foe.IsShielded)
+            {
+                var dmgReduction = rdm.Next(1, 5);
+                AnsiConsole.WriteLine($"Shield reduced damage by {dmgReduction}.");
+                atkDmg = Math.Max(atkDmg - dmgReduction, 0);
+            }
             foe.HP -= atkDmg;
 
             return atkDmg;
         }
     }
 
-    public class Hero : Creature
+    public class Hero(
+        string name,
+        string color,
+        int maxHP,
+        int attackDie,
+        int gold,
+        bool isShielded
+    ) : Creature(name, color, maxHP, attackDie, gold, isShielded)
     {
         public int FelledFoes { get; set; }
-
-        public Hero(string name, string color, int maxHP, int attackDie, int gold)
-            : base(name, color, maxHP, attackDie, gold) { }
+        public List<string> Inventory { get; set; } = ["Shield - 10gp", "None"];
 
         public void Rest()
         {
@@ -77,7 +106,7 @@ namespace ConsoleWarrior
                     HP = MaxHP;
                     Console.WriteLine($"You rest and feel fully restored.");
                 }
-                Console.WriteLine($"You have {HP} HP.\n");
+                Console.WriteLine($"[hero has {HP} HP]\n");
             }
         }
 
@@ -88,47 +117,115 @@ namespace ConsoleWarrior
             return corpse.Gold;
         }
 
-        public void Encounter(Creature creature)
+        public bool Encounter()
         {
-            while (creature.HP > 0 && HP > 0)
-            {
-                AnsiConsole.Markup($"You attack!\n");
-                var atkDmg = Attack(creature);
-                AnsiConsole.Markup($"You deal {atkDmg} damage.\n");
-                Console.WriteLine($"[{creature.Name} has {creature.HP} HP]");
+            var foe = new Creature(
+                name: "Goblin",
+                color: "chartreuse3",
+                maxHP: 5,
+                attackDie: 4,
+                gold: 4
+            );
 
-                if (creature.HP <= 0)
+            switch (FelledFoes)
+            {
+                case <= 3:
+                    break;
+                case <= 6:
+                    foe.Name = "Cultist";
+                    foe.Color = "orangered1";
+                    foe.MaxHP = 8;
+                    foe.AttackDie = 7;
+                    foe.Gold = 6;
+                    break;
+                case > 6:
+                    foe.Name = "Manticore";
+                    foe.Color = "blueviolet";
+                    foe.MaxHP = 15;
+                    foe.AttackDie = 10;
+                    foe.Gold = 8;
+                    break;
+                default:
+
+            }
+            AnsiConsole.Markup($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
+
+            do
+            {
+                Console.WriteLine($"You attack!");
+                var atkDmg = Attack(foe);
+                Console.WriteLine($"You deal {atkDmg} damage.");
+                Console.WriteLine($"[{foe.Name} has {foe.HP} HP]");
+
+                if (foe.HP <= 0)
                 {
-                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] falls dead at your feet.\n");
+                    AnsiConsole.Markup(
+                        $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.\n"
+                    );
                     Console.WriteLine($"{Name} stands victorious!\n");
                     FelledFoes += 1;
 
-                    var loot = Loot(creature);
-                    AnsiConsole.Markup($"You loot the [{creature.Color}]{creature.Name}[/] for {loot} gold pieces. "
-                        + "You drop them into your coinpurse.\n");
-                    Console.WriteLine($"You are carrying {Gold} gold.\n");
+                    var loot = Loot(foe);
+                    AnsiConsole.Markup(
+                        $"You loot the [{foe.Color}]{foe.Name}[/] for [orange1]{loot} gold[/] pieces. "
+                            + "You drop them into your coinpurse.\n"
+                    );
+                    AnsiConsole.Markup($"You are carrying [orange1]{Gold} gold[/].\n");
+
+                    return true;
                 }
                 else
                 {
-                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] still stands, sneering at you.\n\n");
-                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] attacks!\n");
-                    var foeAtkDmg = creature.Attack(this);
-                    AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] deals {foeAtkDmg} damage.\n");
+                    AnsiConsole.Markup(
+                        $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n\n"
+                    );
+                    AnsiConsole.Markup($"The [{foe.Color}]{foe.Name}[/] attacks!\n");
+                    var foeAtkDmg = foe.Attack(this);
+                    AnsiConsole.Markup(
+                        $"The [{foe.Color}]{foe.Name}[/] deals {foeAtkDmg} damage.\n"
+                    );
                     Console.WriteLine($"[hero has {HP} HP]");
 
                     if (HP <= 0)
                     {
-                        AnsiConsole.Markup($"The [{creature.Color}]{creature.Name}[/] strikes you down.\n\n");
-                        Console.WriteLine($"{Gold} gold pieces spill out of your coinpurse.");
-                        Console.WriteLine($"You felled {FelledFoes} foes before meeting your end.");
-                        AnsiConsole.Markup($"Rest in peace, [{Color}]{Name}[/].\n");
+                        AnsiConsole.Markup($"The [{foe.Color}]{foe.Name}[/] strikes you down.\n\n");
+
+                        return false;
                     }
                     else
                     {
-                        Console.WriteLine($"You are hurt but not dead yet. "
-                            + "You steel your nerves for another attack.\n");
+                        if (foeAtkDmg > 0)
+                            Console.WriteLine("You are hurt, but not dead yet.");
+                        Console.WriteLine("You steel your nerves for another attack.\n");
                     }
                 }
+            } while (foe.HP > 0 && HP > 0);
+
+            return true;
+        }
+
+        public void VisitMerchant()
+        {
+            AnsiConsole.Markup("You encounter a [blueviolet]Merchant[/].\n");
+            AnsiConsole.Markup($"You have [orange1]{Gold} gold[/] pieces.\n");
+
+            var purchase = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Hello, weary traveler. See anything you like?")
+                    .AddChoices(Inventory)
+            );
+
+            if (purchase == "Shield - 10gp" && Gold >= 10)
+            {
+                AnsiConsole.WriteLine("Ah, the trusty shield. May it guard you well.");
+                Gold -= 10;
+                Inventory.Remove(purchase);
+                AnsiConsole.Markup($"You are left with [orange1]{Gold} gold[/] pieces.\n\n");
+                IsShielded = true;
+            }
+            else
+            {
+                AnsiConsole.WriteLine("Come back when you've earned some coin.\n");
             }
         }
     }
