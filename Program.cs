@@ -180,7 +180,7 @@ namespace ConsoleWarrior
                 HP = MaxHP;
                 Console.WriteLine($"You rest and feel fully restored.");
             }
-            Console.WriteLine($"[hero has {HP} HP]\n");
+            AnsiConsole.MarkupLine($"[grey][[hero has {HP} HP]][/]\n");
         }
 
         public int Loot(Creature corpse)
@@ -202,7 +202,7 @@ namespace ConsoleWarrior
                 Console.WriteLine($"You attack!");
                 int atkDmg = Attack(foe);
                 Console.WriteLine($"You deal {atkDmg} damage.");
-                Console.WriteLine($"[{foe.Name} has {foe.HP} HP]");
+                AnsiConsole.MarkupLine($"[grey][[{foe.Name} has {foe.HP} HP]][/]");
 
                 if (foe.HP <= 0)
                 {
@@ -217,7 +217,9 @@ namespace ConsoleWarrior
                         $"You loot the [{foe.Color}]{foe.Name}[/] for [orange1]{loot} gold[/] pieces. "
                             + "You drop them into your coinpurse."
                     );
-                    AnsiConsole.MarkupLine($"You are carrying [orange1]{Gold} gold[/].\n");
+                    AnsiConsole.MarkupLine(
+                        $"[grey][[hero is carrying[/] [orange1]{Gold} gold[/] [grey]pieces]][/]\n"
+                    );
 
                     return true;
                 }
@@ -231,7 +233,7 @@ namespace ConsoleWarrior
                     AnsiConsole.MarkupLine(
                         $"The [{foe.Color}]{foe.Name}[/] deals {foeAtkDmg} damage."
                     );
-                    Console.WriteLine($"[hero has {HP} HP]");
+                    AnsiConsole.MarkupLine($"[grey][[hero has {HP} HP]][/]");
 
                     if (HP <= 0)
                     {
@@ -259,7 +261,9 @@ namespace ConsoleWarrior
             rule.Justification = Justify.Left;
             AnsiConsole.Write(rule);
             AnsiConsole.MarkupLine("You encounter a [blueviolet]Merchant[/].");
-            AnsiConsole.MarkupLine($"You have [orange1]{Gold} gold[/] pieces.");
+            AnsiConsole.MarkupLine(
+                $"[grey][[hero is carrying[/] [orange1]{Gold} gold[/] [grey]pieces]][/]"
+            );
 
             string purchase = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
