@@ -87,7 +87,8 @@ namespace ConsoleWarrior
     ) : Creature(name, color, maxHP, attackDie, gold, isShielded)
     {
         public int FelledFoes { get; set; }
-        public List<string> Inventory { get; set; } = ["Shield - 10gp", "None"];
+        public List<string> MerchantInventory { get; set; } =
+            ["Shield - 10gp", "Morning Star - 14gp", "None"];
 
         public void Rest()
         {
@@ -138,15 +139,21 @@ namespace ConsoleWarrior
                     foe.AttackDie = 7;
                     foe.Gold = 6;
                     break;
-                case > 6:
+                case <= 8:
                     foe.Name = "Manticore";
                     foe.Color = "blueviolet";
                     foe.MaxHP = 15;
                     foe.AttackDie = 10;
                     foe.Gold = 8;
                     break;
+                case > 8:
+                    foe.Name = "Lich";
+                    foe.Color = "blueviolet";
+                    foe.MaxHP = 18;
+                    foe.AttackDie = 15;
+                    foe.Gold = 8;
+                    break;
                 default:
-
             }
             AnsiConsole.Markup($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
 
@@ -212,16 +219,24 @@ namespace ConsoleWarrior
             var purchase = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Hello, weary traveler. See anything you like?")
-                    .AddChoices(Inventory)
+                    .AddChoices(MerchantInventory)
             );
 
             if (purchase == "Shield - 10gp" && Gold >= 10)
             {
                 AnsiConsole.WriteLine("Ah, the trusty shield. May it guard you well.");
                 Gold -= 10;
-                Inventory.Remove(purchase);
+                MerchantInventory.Remove(purchase);
                 AnsiConsole.Markup($"You are left with [orange1]{Gold} gold[/] pieces.\n\n");
                 IsShielded = true;
+            }
+            else if (purchase == "Morning Star - 14gp" && Gold >= 14)
+            {
+                AnsiConsole.WriteLine("So, you lust for blood. Strike true, warrior.");
+                Gold -= 14;
+                MerchantInventory.Remove(purchase);
+                AnsiConsole.Markup($"You are left with [orange1]{Gold} gold[/] pieces.\n\n");
+                AttackDie = 8;
             }
             else
             {
