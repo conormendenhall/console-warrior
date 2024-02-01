@@ -23,7 +23,8 @@ namespace ConsoleWarrior
 
                 if (heroSurvives)
                 {
-                    hero.Rest();
+                    if (hero.HP < hero.MaxHP)
+                        hero.Rest();
                     hero.VisitMerchant();
                 }
                 else
@@ -142,23 +143,20 @@ namespace ConsoleWarrior
 
         public void Rest()
         {
-            if (HP < MaxHP)
-            {
-                Random rdm = new();
-                int restHP = rdm.Next(1, 3);
+            Random rdm = new();
+            int restHP = rdm.Next(1, 3);
 
-                if (HP + restHP <= MaxHP)
-                {
-                    HP += restHP;
-                    Console.WriteLine($"You rest and restore {restHP} HP.");
-                }
-                else
-                {
-                    HP = MaxHP;
-                    Console.WriteLine($"You rest and feel fully restored.");
-                }
-                Console.WriteLine($"[hero has {HP} HP]\n");
+            if (HP + restHP <= MaxHP)
+            {
+                HP += restHP;
+                Console.WriteLine($"You rest and restore {restHP} HP.");
             }
+            else
+            {
+                HP = MaxHP;
+                Console.WriteLine($"You rest and feel fully restored.");
+            }
+            Console.WriteLine($"[hero has {HP} HP]\n");
         }
 
         public int Loot(Creature corpse)
