@@ -8,7 +8,7 @@ namespace ConsoleWarrior
         {
             Console.WriteLine("Hello, Warrior!");
 
-            var warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
+            string warriorName = AnsiConsole.Ask<string>("What is your [red]name[/]?");
             var hero = new Hero(
                 name: warriorName,
                 color: "red",
@@ -22,7 +22,8 @@ namespace ConsoleWarrior
 
             do
             {
-                bool heroSurvives = hero.Encounter();
+                Creature foe = GetFoe(hero.FelledFoes);
+                bool heroSurvives = hero.Encounter(foe);
 
                 if (heroSurvives)
                 {
@@ -40,6 +41,47 @@ namespace ConsoleWarrior
                     AnsiConsole.Markup($"Rest in peace, [{hero.Color}]{hero.Name}[/].\n");
                 }
             } while (hero.HP > 0);
+        }
+
+        public static Creature GetFoe(int felledFoes)
+        {
+            var foe = new Creature(
+                name: "Goblin",
+                color: "chartreuse3",
+                maxHP: 5,
+                attackDie: 4,
+                gold: 4
+            );
+
+            switch (felledFoes)
+            {
+                case <= 3:
+                    break;
+                case <= 6:
+                    foe.Name = "Cultist";
+                    foe.Color = "orangered1";
+                    foe.MaxHP = 8;
+                    foe.AttackDie = 7;
+                    foe.Gold = 6;
+                    break;
+                case <= 8:
+                    foe.Name = "Manticore";
+                    foe.Color = "blueviolet";
+                    foe.MaxHP = 15;
+                    foe.AttackDie = 10;
+                    foe.Gold = 8;
+                    break;
+                case > 8:
+                    foe.Name = "Lich";
+                    foe.Color = "blueviolet";
+                    foe.MaxHP = 18;
+                    foe.AttackDie = 15;
+                    foe.Gold = 8;
+                    break;
+                default:
+
+            }
+            return foe;
         }
     }
 
@@ -63,11 +105,11 @@ namespace ConsoleWarrior
         public int Attack(Creature foe)
         {
             Random rdm = new();
-            var atkDmg = rdm.Next(1, AttackDie);
+            int atkDmg = rdm.Next(1, AttackDie);
 
             if (foe.IsShielded)
             {
-                var dmgReduction = rdm.Next(1, 5);
+                int dmgReduction = rdm.Next(1, 5);
                 AnsiConsole.WriteLine($"Shield reduced damage by {dmgReduction}.");
                 atkDmg = Math.Max(atkDmg - dmgReduction, 0);
             }
@@ -95,7 +137,7 @@ namespace ConsoleWarrior
             if (HP < MaxHP)
             {
                 Random rdm = new();
-                var restHP = rdm.Next(1, 3);
+                int restHP = rdm.Next(1, 3);
 
                 if (HP + restHP <= MaxHP)
                 {
@@ -118,49 +160,14 @@ namespace ConsoleWarrior
             return corpse.Gold;
         }
 
-        public bool Encounter()
+        public bool Encounter(Creature foe)
         {
-            var foe = new Creature(
-                name: "Goblin",
-                color: "chartreuse3",
-                maxHP: 5,
-                attackDie: 4,
-                gold: 4
-            );
-
-            switch (FelledFoes)
-            {
-                case <= 3:
-                    break;
-                case <= 6:
-                    foe.Name = "Cultist";
-                    foe.Color = "orangered1";
-                    foe.MaxHP = 8;
-                    foe.AttackDie = 7;
-                    foe.Gold = 6;
-                    break;
-                case <= 8:
-                    foe.Name = "Manticore";
-                    foe.Color = "blueviolet";
-                    foe.MaxHP = 15;
-                    foe.AttackDie = 10;
-                    foe.Gold = 8;
-                    break;
-                case > 8:
-                    foe.Name = "Lich";
-                    foe.Color = "blueviolet";
-                    foe.MaxHP = 18;
-                    foe.AttackDie = 15;
-                    foe.Gold = 8;
-                    break;
-                default:
-            }
             AnsiConsole.Markup($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
 
             do
             {
                 Console.WriteLine($"You attack!");
-                var atkDmg = Attack(foe);
+                int atkDmg = Attack(foe);
                 Console.WriteLine($"You deal {atkDmg} damage.");
                 Console.WriteLine($"[{foe.Name} has {foe.HP} HP]");
 
@@ -172,7 +179,7 @@ namespace ConsoleWarrior
                     Console.WriteLine($"{Name} stands victorious!\n");
                     FelledFoes += 1;
 
-                    var loot = Loot(foe);
+                    int loot = Loot(foe);
                     AnsiConsole.Markup(
                         $"You loot the [{foe.Color}]{foe.Name}[/] for [orange1]{loot} gold[/] pieces. "
                             + "You drop them into your coinpurse.\n"
@@ -187,7 +194,7 @@ namespace ConsoleWarrior
                         $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n\n"
                     );
                     AnsiConsole.Markup($"The [{foe.Color}]{foe.Name}[/] attacks!\n");
-                    var foeAtkDmg = foe.Attack(this);
+                    int foeAtkDmg = foe.Attack(this);
                     AnsiConsole.Markup(
                         $"The [{foe.Color}]{foe.Name}[/] deals {foeAtkDmg} damage.\n"
                     );
@@ -216,7 +223,7 @@ namespace ConsoleWarrior
             AnsiConsole.Markup("You encounter a [blueviolet]Merchant[/].\n");
             AnsiConsole.Markup($"You have [orange1]{Gold} gold[/] pieces.\n");
 
-            var purchase = AnsiConsole.Prompt(
+            string purchase = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Hello, weary traveler. See anything you like?")
                     .AddChoices(MerchantInventory)
