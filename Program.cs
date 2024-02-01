@@ -209,7 +209,7 @@ namespace ConsoleWarrior
                     AnsiConsole.MarkupLine(
                         $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet."
                     );
-                    Console.WriteLine($"{Name} stands victorious!\n");
+                    AnsiConsole.MarkupLine($"[{Color}]{Name}[/] stands victorious!\n");
                     FelledFoes += 1;
 
                     int loot = Loot(foe);
