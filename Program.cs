@@ -7,16 +7,12 @@ public static class Program
     public static void Main(string[] args)
     {
         var font = FigletFont.Load("epic.flf");
-        AnsiConsole.Write(
-            new FigletText(font, "Hello, Warrior!").LeftJustified().Color(Color.Red)
-        );
+        AnsiConsole.Write(new FigletText(font, "Hello, Warrior!").LeftJustified().Color(Color.Red));
 
         var nameInput = AnsiConsole.Prompt(
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
-        string warriorName = string.IsNullOrWhiteSpace(nameInput)
-            ? "Nameless Warrior"
-            : nameInput;
+        string warriorName = string.IsNullOrWhiteSpace(nameInput) ? "Nameless Warrior" : nameInput;
         var hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5);
 
         AnsiConsole.MarkupLine($"Well met, [{hero.Color}]{hero.Name}[/].\n");
@@ -43,9 +39,7 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
                 );
-                Console.WriteLine(
-                    $"You felled {hero.FelledFoes} foes before meeting your end."
-                );
+                Console.WriteLine($"You felled {hero.FelledFoes} foes before meeting your end.");
                 AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
             }
         } while (hero.HP > 0);
@@ -128,7 +122,7 @@ public class Creature(
         if (foe.IsArmored)
         {
             int dmgReduction = rdm.Next(1, 5);
-            AnsiConsole.WriteLine($"Armor reduced damage by {dmgReduction}.");
+            AnsiConsole.WriteLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
         }
         foe.HP -= atkDmg;
@@ -181,10 +175,7 @@ public class Hero(
 
     public bool Encounter(Creature foe)
     {
-        var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]")
-        {
-            Justification = Justify.Left
-        };
+        var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].");
 
@@ -193,14 +184,12 @@ public class Hero(
             Program.Pause("Attack");
             Console.WriteLine($"You attack!");
             int atkDmg = Attack(foe);
-            Console.WriteLine($"You deal {atkDmg} damage.");
+            AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
             AnsiConsole.MarkupLine($"[grey][[{foe.Name} has {foe.HP} HP]][/]");
 
             if (foe.HP <= 0)
             {
-                AnsiConsole.MarkupLine(
-                    $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet."
-                );
+                AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.");
                 AnsiConsole.MarkupLine($"[{Color}]{Name}[/] stands victorious!\n");
                 FelledFoes += 1;
 
@@ -222,16 +211,12 @@ public class Hero(
                 );
                 AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] attacks!");
                 int foeAtkDmg = foe.Attack(this);
-                AnsiConsole.MarkupLine(
-                    $"The [{foe.Color}]{foe.Name}[/] deals {foeAtkDmg} damage."
-                );
+                Console.WriteLine($"You take {foeAtkDmg} damage.");
                 AnsiConsole.MarkupLine($"[grey][[hero has {HP} HP]][/]");
 
                 if (HP <= 0)
                 {
-                    AnsiConsole.MarkupLine(
-                        $"The [{foe.Color}]{foe.Name}[/] strikes you down.\n"
-                    );
+                    AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] strikes you down.\n");
 
                     return false;
                 }
