@@ -26,23 +26,19 @@ namespace ConsoleWarrior
                 Creature foe = GetFoe(hero.FelledFoes);
                 bool heroSurvives = hero.Encounter(foe);
 
-                Pause();
-
                 if (heroSurvives)
                 {
                     if (hero.HP < hero.MaxHP)
+                    {
+                        Pause("Rest");
                         hero.Rest();
-
-                    Pause();
-
+                    }
+                    AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices("Trade"));
                     hero.VisitMerchant();
-
-                    Pause();
                 }
                 else
                 {
-                    var rule = new Rule("Death");
-                    rule.Justification = Justify.Left;
+                    var rule = new Rule("Death") { Justification = Justify.Left };
                     AnsiConsole.Write(rule);
                     AnsiConsole.MarkupLine(
                         $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
@@ -55,10 +51,8 @@ namespace ConsoleWarrior
             } while (hero.HP > 0);
         }
 
-        public static void Pause()
-        {
-            AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices("Proceed"));
-        }
+        public static void Pause(string prompt = "Proceed") =>
+            AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices(prompt));
 
         public static Creature GetFoe(int felledFoes)
         {
@@ -199,6 +193,7 @@ namespace ConsoleWarrior
 
             do
             {
+                Program.Pause("Attack");
                 Console.WriteLine($"You attack!");
                 int atkDmg = Attack(foe);
                 Console.WriteLine($"You deal {atkDmg} damage.");
