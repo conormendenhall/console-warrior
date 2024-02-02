@@ -157,8 +157,7 @@ namespace ConsoleWarrior
 
         public void Rest()
         {
-            var rule = new Rule("[dodgerblue1]Rest[/]");
-            rule.Justification = Justify.Left;
+            var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
             AnsiConsole.Write(rule);
 
             Random rdm = new();
@@ -186,8 +185,10 @@ namespace ConsoleWarrior
 
         public bool Encounter(Creature foe)
         {
-            var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]");
-            rule.Justification = Justify.Left;
+            var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]")
+            {
+                Justification = Justify.Left
+            };
             AnsiConsole.Write(rule);
             AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].");
 
@@ -252,8 +253,7 @@ namespace ConsoleWarrior
 
         public void VisitMerchant()
         {
-            var rule = new Rule("[blueviolet]Merchant[/]");
-            rule.Justification = Justify.Left;
+            var rule = new Rule("[blueviolet]Merchant[/]") { Justification = Justify.Left };
             AnsiConsole.Write(rule);
             AnsiConsole.MarkupLine("You encounter a [blueviolet]Merchant[/].");
             AnsiConsole.MarkupLine(
