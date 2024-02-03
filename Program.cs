@@ -29,7 +29,7 @@ public static class Program
                     Pause("Rest");
                     hero.Rest();
                 }
-                AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices("Trade"));
+                Pause("Trade");
                 hero.VisitMerchant();
             }
             else
@@ -45,8 +45,12 @@ public static class Program
         } while (hero.HP > 0);
     }
 
+    public static Style SelectStyle => new Style().Foreground(Color.Red);
+
     public static void Pause(string prompt = "Proceed") =>
-        AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices(prompt));
+        AnsiConsole.Prompt(
+            new SelectionPrompt<string>().HighlightStyle(SelectStyle).AddChoices(prompt)
+        );
 
     public static Creature GetFoe(int felledFoes) =>
         felledFoes switch
@@ -64,7 +68,7 @@ public static class Program
                     name: "Cultist",
                     color: "orangered1",
                     maxHP: 8,
-                    attackDie: 7,
+                    attackDie: 6,
                     gold: 6
                 ),
             <= 8
@@ -72,7 +76,7 @@ public static class Program
                     name: "Manticore",
                     color: "darkgoldenrod",
                     maxHP: 15,
-                    attackDie: 10,
+                    attackDie: 9,
                     gold: 8
                 ),
             > 8
@@ -80,7 +84,7 @@ public static class Program
                     name: "Lich",
                     color: "royalblue1",
                     maxHP: 18,
-                    attackDie: 15,
+                    attackDie: 12,
                     gold: 15
                 ),
         };
@@ -109,7 +113,7 @@ public class Creature(
     {
         Random rdm = new();
 
-        bool miss = foe.IsShielded && rdm.Next(1, 4) == 1;
+        bool miss = foe.IsShielded && rdm.Next(1, 5) == 1;
 
         if (miss)
         {
@@ -121,8 +125,8 @@ public class Creature(
 
         if (foe.IsArmored)
         {
-            int dmgReduction = rdm.Next(1, 5);
-            AnsiConsole.WriteLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
+            int dmgReduction = rdm.Next(1, 4);
+            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
         }
         foe.HP -= atkDmg;
@@ -142,8 +146,15 @@ public class Hero(
 ) : Creature(name, color, maxHP, attackDie, gold, isArmored, isShielded)
 {
     public int FelledFoes { get; set; }
-    public List<string> MerchantInventory { get; set; } =
-        ["Leather Armor - 10gp", "Shield - 12gp", "Morning Star - 14gp", "None"];
+
+    public Dictionary<string, int?> MerchantInventory { get; set; } =
+        new()
+        {
+            { "Leather Armor", 8 },
+            { "Shield", 10 },
+            { "Morning Star", 12 },
+            { "None", null }
+        };
 
     public void Rest()
     {
@@ -151,41 +162,42 @@ public class Hero(
         AnsiConsole.Write(rule);
 
         Random rdm = new();
-        int restHP = rdm.Next(1, 3);
+        int restHP = rdm.Next(1, 5);
 
         if (HP + restHP <= MaxHP)
         {
-            HP += restHP;
             Console.WriteLine($"You rest and restore {restHP} HP.");
+            HP += restHP;
+            AnsiConsole.Write(HealthTable(Name, HP, MaxHP, Color));
         }
         else
         {
+            Console.WriteLine($"You gain {MaxHP - HP} HP and feel fully restored.");
             HP = MaxHP;
-            Console.WriteLine($"You rest and feel fully restored.");
+            AnsiConsole.Write(HealthTable(Name, HP, MaxHP, Color));
         }
         AnsiConsole.MarkupLine($"[grey][[hero has {HP} HP]][/]\n");
     }
 
-    public int Loot(Creature corpse)
-    {
-        Gold += corpse.Gold;
-
-        return corpse.Gold;
-    }
+    public int Loot(Creature corpse) => Gold += corpse.Gold;
 
     public bool Encounter(Creature foe)
     {
         var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
-        AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].");
+        AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
 
         do
         {
             Program.Pause("Attack");
-            Console.WriteLine($"You attack!");
+            Console.WriteLine("You attack!");
+
             int atkDmg = Attack(foe);
             AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
             AnsiConsole.MarkupLine($"[grey][[{foe.Name} has {foe.HP} HP]][/]");
+
+            var foeDisplayHP = Math.Max(foe.HP, 0);
+            AnsiConsole.Write(HealthTable(foe.Name, foeDisplayHP, foe.MaxHP, foe.Color));
 
             if (foe.HP <= 0)
             {
@@ -214,6 +226,9 @@ public class Hero(
                 Console.WriteLine($"You take {foeAtkDmg} damage.");
                 AnsiConsole.MarkupLine($"[grey][[hero has {HP} HP]][/]");
 
+                var heroDisplayHP = Math.Max(HP, 0);
+                AnsiConsole.Write(HealthTable(Name, heroDisplayHP, MaxHP, Color));
+
                 if (HP <= 0)
                 {
                     AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] strikes you down.\n");
@@ -232,48 +247,93 @@ public class Hero(
         return true;
     }
 
+    public static Canvas HealthBar(int hp, int maxHP)
+    {
+        var canvas = new Canvas(maxHP, 1);
+
+        for (var i = 0; i < hp; i++)
+        {
+            canvas.SetPixel(i, 0, Spectre.Console.Color.Green);
+        }
+        for (var i = hp; i < maxHP; i++)
+        {
+            canvas.SetPixel(i, 0, Spectre.Console.Color.Red);
+        }
+
+        return canvas;
+    }
+
+    public static Table HealthTable(string name, int hp, int maxHP, string color)
+    {
+        var table = new Table();
+        table.HideHeaders();
+        table.Border(TableBorder.Simple);
+
+        table.AddColumn("Combatant");
+        table.AddColumn("Health");
+
+        table.AddRow(new Markup($"[{color}]{name}[/]"), HealthBar(hp, maxHP));
+
+        return table;
+    }
+
     public void VisitMerchant()
     {
-        var rule = new Rule("[blueviolet]Merchant[/]") { Justification = Justify.Left };
+        var rule = new Rule("[royalblue1]Merchant[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
-        AnsiConsole.MarkupLine("You encounter a [blueviolet]Merchant[/].");
+        AnsiConsole.MarkupLine("You encounter a [royalblue1]Merchant[/].");
+        AnsiConsole.MarkupLine(
+            "[royalblue1]\"Hello, weary traveler. See anything you like?\"[/]\n"
+        );
         AnsiConsole.MarkupLine(
             $"[grey][[hero is carrying[/] [orange1]{Gold} gold[/] [grey]pieces]][/]"
         );
 
-        string purchase = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Hello, weary traveler. See anything you like?")
+        var purchase = AnsiConsole.Prompt(
+            new SelectionPrompt<KeyValuePair<string, int?>>()
+                .HighlightStyle(Program.SelectStyle)
                 .AddChoices(MerchantInventory)
+                .UseConverter(pair => $"{pair.Key} {pair.Value}")
         );
 
-        if (purchase == "Leather Armor - 10gp" && Gold >= 10)
+        if (purchase.Key == "Leather Armor" && Gold >= 8)
         {
-            AnsiConsole.WriteLine("You think this will protect you? Good luck.");
-            Gold -= 10;
-            MerchantInventory.Remove(purchase);
-            AnsiConsole.MarkupLine($"You are left with [orange1]{Gold} gold[/] pieces.\n");
+            MerchantInventory.Remove(purchase.Key);
+            Gold -= 8;
             IsArmored = true;
-        }
-        else if (purchase == "Shield - 12gp" && Gold >= 10)
-        {
-            AnsiConsole.WriteLine("Ah, the trusty shield. May it guard you well.");
-            Gold -= 12;
-            MerchantInventory.Remove(purchase);
+            Console.WriteLine("You don the leather armor.");
+            AnsiConsole.MarkupLine(
+                "[royalblue1]\"You think this will protect you? Good luck.\"[/]"
+            );
             AnsiConsole.MarkupLine($"You are left with [orange1]{Gold} gold[/] pieces.\n");
+        }
+        else if (purchase.Key == "Shield" && Gold >= 10)
+        {
+            MerchantInventory.Remove(purchase.Key);
+            Gold -= 10;
             IsShielded = true;
-        }
-        else if (purchase == "Morning Star - 14gp" && Gold >= 14)
-        {
-            AnsiConsole.WriteLine("So, you lust for blood. Heh heh... Strike true, warrior.");
-            Gold -= 14;
-            MerchantInventory.Remove(purchase);
+            Console.WriteLine("You lift the shield.");
+            AnsiConsole.MarkupLine(
+                "[royalblue1]\"Ah, the trusty shield. May it guard you well\"[/]"
+            );
             AnsiConsole.MarkupLine($"You are left with [orange1]{Gold} gold[/] pieces.\n");
+        }
+        else if (purchase.Key == "Morning Star" && Gold >= 12)
+        {
+            MerchantInventory.Remove(purchase.Key);
+            Gold -= 12;
             AttackDie = 8;
+            Console.WriteLine("You heft the morningstar.");
+            AnsiConsole.MarkupLine(
+                "[royalblue1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
+            );
+            AnsiConsole.MarkupLine($"You are left with [orange1]{Gold} gold[/] pieces.\n");
         }
         else
         {
-            AnsiConsole.WriteLine("Come back when you're ready to spend some coin.\n");
+            AnsiConsole.MarkupLine(
+                "[royalblue1]\"Come back when you're ready to spend some coin.\"[/]\n"
+            );
         }
     }
 }
