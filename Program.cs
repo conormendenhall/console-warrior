@@ -51,7 +51,9 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
                 );
-                Console.WriteLine($"You felled {hero.FelledFoes} foes before meeting your end.");
+                Console.WriteLine(
+                    $"You reached level {hero.Level} and felled {hero.FelledFoes} foes before meeting your end."
+                );
                 AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
             }
         } while (hero.HP > 0);
@@ -101,7 +103,20 @@ public static class Program
                 ),
         };
 
-    public static int Loot(this Hero hero, Creature corpse) => hero.Gold += corpse.Gold;
+    public static void Loot(this Hero hero, Creature corpse)
+    {
+        var rule = new Rule("Loot") { Justification = Justify.Left };
+        AnsiConsole.Write(rule);
+
+        hero.Gold += corpse.Gold;
+        AnsiConsole.MarkupLine(
+            $"You loot the [{corpse.Color}]{corpse.Name}[/] for [orange1]{corpse.Gold} gold[/] pieces. "
+                + "You drop them into your coinpurse."
+        );
+        AnsiConsole.MarkupLine(
+            $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
+        );
+    }
 
     public static int Attack(this Creature hero, Creature foe)
     {
@@ -141,24 +156,26 @@ public static class Program
 
             int atkDmg = hero.Attack(foe);
             AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
-            AnsiConsole.MarkupLine($"[grey][[{foe.Name} has {foe.HP} HP]][/]");
 
+            foe.PrintHealth();
             AnsiConsole.Write(foe.HealthTable());
 
             if (foe.HP <= 0)
             {
                 AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.");
-                AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!\n");
-                hero.FelledFoes += 1;
+                AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
 
-                int loot = hero.Loot(foe);
+                hero.FelledFoes += 1;
+                hero.Experience += foe.MaxHP + foe.AttackDie;
                 AnsiConsole.MarkupLine(
-                    $"You loot the [{foe.Color}]{foe.Name}[/] for [orange1]{loot} gold[/] pieces. "
-                        + "You drop them into your coinpurse."
+                    $"[grey][[hero gains {foe.MaxHP} XP for a total {hero.Experience} XP]][/]\n"
                 );
-                AnsiConsole.MarkupLine(
-                    $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
-                );
+
+                if (hero.Experience >= hero.LevelXP)
+                    hero.LevelUp();
+
+                Pause("Loot");
+                hero.Loot(foe);
 
                 return true;
             }
@@ -170,8 +187,8 @@ public static class Program
                 AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] attacks!");
                 int foeAtkDmg = foe.Attack(hero);
                 Console.WriteLine($"You take {foeAtkDmg} damage.");
-                AnsiConsole.MarkupLine($"[grey][[hero has {hero.HP} HP]][/]");
 
+                hero.PrintHealth();
                 AnsiConsole.Write(hero.HealthTable());
 
                 if (hero.HP <= 0)
@@ -192,6 +209,25 @@ public static class Program
         return true;
     }
 
+    public static void LevelUp(this Hero hero)
+    {
+        var rule = new Rule("[red]You Level Up![/]") { Justification = Justify.Left };
+        AnsiConsole.Write(rule);
+
+        hero.Level += 1;
+        AnsiConsole.MarkupLine($"Level {hero.Level}");
+
+        hero.Experience -= hero.LevelXP;
+        hero.LevelXP += hero.LevelXP / 5;
+        AnsiConsole.MarkupLine($"[grey][[next level at {hero.LevelXP} XP]][/]\n");
+
+        hero.MaxHP += 3;
+        hero.HP = hero.MaxHP;
+        AnsiConsole.MarkupLine(
+            $"You gain [green]3 HP[/] for a maximum [green]{hero.MaxHP} HP[/].\n"
+        );
+    }
+
     public static void Rest(this Hero hero)
     {
         var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
@@ -202,16 +238,18 @@ public static class Program
 
         if (hero.HP + restHP <= hero.MaxHP)
         {
-            Console.WriteLine($"You rest and restore {restHP} HP.");
+            AnsiConsole.MarkupLine($"You rest and restore [green]{restHP} HP[/].");
             hero.HP += restHP;
         }
         else
         {
-            Console.WriteLine($"You gain {hero.MaxHP - hero.HP} HP and feel fully restored.");
+            AnsiConsole.MarkupLine(
+                $"You gain [green]{hero.MaxHP - hero.HP} HP[/] and feel fully restored."
+            );
             hero.HP = hero.MaxHP;
         }
+        hero.PrintHealth();
         AnsiConsole.Write(hero.HealthTable());
-        AnsiConsole.MarkupLine($"[grey][[hero has {hero.HP} HP]][/]\n");
     }
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
@@ -285,14 +323,21 @@ public static class Program
 
         for (var i = 0; i < displayHP; i++)
         {
-            canvas.SetPixel(i, 0, Spectre.Console.Color.Green);
+            canvas.SetPixel(i, 0, Color.Green);
         }
         for (var i = displayHP; i < creature.MaxHP; i++)
         {
-            canvas.SetPixel(i, 0, Spectre.Console.Color.Red);
+            canvas.SetPixel(i, 0, Color.Red);
         }
 
         return canvas;
+    }
+
+    public static void PrintHealth(this Creature creature)
+    {
+        AnsiConsole.MarkupLine(
+            $"[grey][[{creature.Name} has[/] [green]{creature.HP} HP[/][grey]]][/]"
+        );
     }
 
     public static Table HealthTable(this Creature creature)
@@ -314,6 +359,8 @@ public static class Program
         var rule = new Rule("Report") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
+        Console.WriteLine($"Level {hero.Level}");
+
         AnsiConsole.Write(hero.HealthTable());
         AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/]");
 
@@ -331,15 +378,7 @@ public static class Program
     }
 }
 
-public class Creature(
-    string name,
-    string color,
-    int maxHP,
-    int attackDie,
-    int gold = 0,
-    bool isArmored = false,
-    bool isShielded = false
-)
+public class Creature(string name, string color, int maxHP, int attackDie, int gold = 0)
 {
     public string Name { get; set; } = name;
     public string Color { get; set; } = color;
@@ -347,20 +386,16 @@ public class Creature(
     public int MaxHP { get; set; } = maxHP;
     public int AttackDie { get; set; } = attackDie;
     public int Gold { get; set; } = gold;
-    public bool IsArmored { get; set; } = isArmored;
-    public bool IsShielded { get; set; } = isShielded;
+    public bool IsArmored { get; set; } = false;
+    public bool IsShielded { get; set; } = false;
 }
 
-public class Hero(
-    string name,
-    string color,
-    int maxHP,
-    int attackDie,
-    int gold = 0,
-    bool isArmored = false,
-    bool isShielded = false
-) : Creature(name, color, maxHP, attackDie, gold, isArmored, isShielded)
+public class Hero(string name, string color, int maxHP, int attackDie)
+    : Creature(name, color, maxHP, attackDie)
 {
-    public int FelledFoes { get; set; }
-    public bool CarriesMorningStar { get; set; }
+    public int FelledFoes { get; set; } = 0;
+    public int Experience { get; set; } = 0;
+    public int LevelXP { get; set; } = 25;
+    public int Level { get; set; } = 1;
+    public bool CarriesMorningStar { get; set; } = false;
 }
