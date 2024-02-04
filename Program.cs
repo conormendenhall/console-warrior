@@ -29,7 +29,7 @@ public static class Program
         do
         {
             Pause("Venture forth");
-            Creature foe = GetFoe(hero.FoesFelled.Count);
+            Creature foe = GetFoe(hero.Level);
             bool heroSurvives = hero.Encounter(foe);
 
             if (heroSurvives)
@@ -46,56 +46,7 @@ public static class Program
             }
             else
             {
-                var rule = new Rule("Death") { Justification = Justify.Left };
-                AnsiConsole.Write(rule);
-                AnsiConsole.MarkupLine(
-                    $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
-                );
-                Console.WriteLine(
-                    $"You reached level {hero.Level} and felled {hero.FoesFelled.Count} foes before meeting your end."
-                );
-
-                var defeatedFoes = new Table();
-                defeatedFoes.HideHeaders();
-                defeatedFoes.Border(TableBorder.Simple);
-
-                defeatedFoes.AddColumn("Foe");
-                defeatedFoes.AddColumn("Count");
-
-                if (hero.FoesFelled.Exists(x => x.Name == "Goblin"))
-                {
-                    defeatedFoes.AddRow(
-                        new Text("Goblins:"),
-                        new Text(hero.FoesFelled.Count(x => x.Name == "Goblin").ToString())
-                    );
-                }
-
-                if (hero.FoesFelled.Exists(x => x.Name == "Cultist"))
-                {
-                    defeatedFoes.AddRow(
-                        new Text("Cultists:"),
-                        new Text(hero.FoesFelled.Count(x => x.Name == "Cultist").ToString())
-                    );
-                }
-
-                if (hero.FoesFelled.Exists(x => x.Name == "Manticore"))
-                {
-                    defeatedFoes.AddRow(
-                        new Text("Manticores:"),
-                        new Text(hero.FoesFelled.Count(x => x.Name == "Manticore").ToString())
-                    );
-                }
-
-                if (hero.FoesFelled.Exists(x => x.Name == "Lich"))
-                {
-                    defeatedFoes.AddRow(
-                        new Text("Lichs:"),
-                        new Text(hero.FoesFelled.Count(x => x.Name == "Lich").ToString())
-                    );
-                }
-                AnsiConsole.Write(defeatedFoes);
-
-                AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
+                hero.DeathReport();
             }
         } while (hero.HP > 0);
     }
@@ -107,42 +58,52 @@ public static class Program
             new SelectionPrompt<string>().HighlightStyle(SelectStyle).AddChoices(prompt)
         );
 
-    public static Creature GetFoe(int felledFoes) =>
-        felledFoes switch
-        {
-            <= 3
-                => new Creature(
-                    name: "Goblin",
-                    color: "chartreuse3",
-                    maxHP: 5,
-                    attackDie: 4,
-                    gold: 4
-                ),
-            <= 6
-                => new Creature(
-                    name: "Cultist",
-                    color: "orangered1",
-                    maxHP: 8,
-                    attackDie: 6,
-                    gold: 6
-                ),
-            <= 8
-                => new Creature(
-                    name: "Manticore",
-                    color: "darkgoldenrod",
-                    maxHP: 15,
-                    attackDie: 9,
-                    gold: 8
-                ),
-            > 8
-                => new Creature(
-                    name: "Lich",
-                    color: "royalblue1",
-                    maxHP: 18,
-                    attackDie: 12,
-                    gold: 15
-                ),
-        };
+    public static List<Creature> Foes =>
+        [
+            new Creature(
+                name: "Goblin",
+                color: "chartreuse3",
+                maxHP: 5,
+                attackDie: 4,
+                gold: 4,
+                level: 1
+            ),
+            new Creature(
+                name: "Cultist",
+                color: "orangered1",
+                maxHP: 8,
+                attackDie: 6,
+                gold: 6,
+                level: 2
+            ),
+            new Creature(
+                name: "Manticore",
+                color: "darkgoldenrod",
+                maxHP: 15,
+                attackDie: 9,
+                gold: 8,
+                level: 3
+            ),
+            new Creature(
+                name: "Lich",
+                color: "royalblue1",
+                maxHP: 18,
+                attackDie: 12,
+                gold: 15,
+                level: 4
+            ),
+            new Creature(
+                name: "Leviathan",
+                color: "red",
+                maxHP: 50,
+                attackDie: 35,
+                gold: 100,
+                level: int.MaxValue
+            ),
+        ];
+
+    public static Creature GetFoe(int heroLevel) =>
+        Foes.FirstOrDefault(x => x.Level >= heroLevel, Foes[^1]);
 
     public static void Loot(this Hero hero, Creature corpse)
     {
@@ -209,7 +170,7 @@ public static class Program
                 hero.FoesFelled.Add(foe);
                 hero.Experience += foe.MaxHP + foe.AttackDie;
                 AnsiConsole.MarkupLine(
-                    $"[grey][[hero gains {foe.MaxHP} XP for a total {hero.Experience} XP]][/]\n"
+                    $"[grey][[hero gains {foe.MaxHP + foe.AttackDie} XP for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
                 );
 
                 if (hero.Experience >= hero.LevelXP)
@@ -417,9 +378,73 @@ public static class Program
         AnsiConsole.WriteLine($"Inventory: {inventoryString}");
         AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished\n");
     }
+
+    public static void ReportFelledFoes(this Hero hero)
+    {
+        var felledFoes = new Table();
+        felledFoes.HideHeaders();
+        felledFoes.Border(TableBorder.Simple);
+
+        felledFoes.AddColumn("Foe");
+        felledFoes.AddColumn("Count");
+
+        if (hero.FoesFelled.Exists(x => x.Name == "Goblin"))
+        {
+            felledFoes.AddRow(
+                new Text("Goblins:"),
+                new Text(hero.FoesFelled.Count(x => x.Name == "Goblin").ToString())
+            );
+        }
+
+        if (hero.FoesFelled.Exists(x => x.Name == "Cultist"))
+        {
+            felledFoes.AddRow(
+                new Text("Cultists:"),
+                new Text(hero.FoesFelled.Count(x => x.Name == "Cultist").ToString())
+            );
+        }
+
+        if (hero.FoesFelled.Exists(x => x.Name == "Manticore"))
+        {
+            felledFoes.AddRow(
+                new Text("Manticores:"),
+                new Text(hero.FoesFelled.Count(x => x.Name == "Manticore").ToString())
+            );
+        }
+
+        if (hero.FoesFelled.Exists(x => x.Name == "Lich"))
+        {
+            felledFoes.AddRow(
+                new Text("Lichs:"),
+                new Text(hero.FoesFelled.Count(x => x.Name == "Lich").ToString())
+            );
+        }
+        AnsiConsole.Write(felledFoes);
+    }
+
+    public static void DeathReport(this Hero hero)
+    {
+        var rule = new Rule("Death") { Justification = Justify.Left };
+        AnsiConsole.Write(rule);
+        AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse.");
+        Console.WriteLine(
+            $"You reached level {hero.Level} and felled {hero.FoesFelled.Count} foes before meeting your end."
+        );
+
+        hero.ReportFelledFoes();
+
+        AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
+    }
 }
 
-public class Creature(string name, string color, int maxHP, int attackDie, int gold = 0)
+public class Creature(
+    string name,
+    string color,
+    int maxHP,
+    int attackDie,
+    int gold = 0,
+    int level = 1
+)
 {
     public string Name { get; set; } = name;
     public string Color { get; set; } = color;
@@ -429,14 +454,14 @@ public class Creature(string name, string color, int maxHP, int attackDie, int g
     public int Gold { get; set; } = gold;
     public bool IsArmored { get; set; } = false;
     public bool IsShielded { get; set; } = false;
+    public int Level { get; set; } = level;
 }
 
 public class Hero(string name, string color, int maxHP, int attackDie)
     : Creature(name, color, maxHP, attackDie)
 {
     public int Experience { get; set; } = 0;
-    public int LevelXP { get; set; } = 25;
-    public int Level { get; set; } = 1;
+    public int LevelXP { get; set; } = 20;
     public List<Creature> FoesFelled { get; set; } = [];
     public bool CarriesMorningStar { get; set; } = false;
 }
