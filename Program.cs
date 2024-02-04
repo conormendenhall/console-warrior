@@ -29,7 +29,7 @@ public static class Program
         do
         {
             Pause("Venture forth");
-            Creature foe = GetFoe(hero.FelledFoes);
+            Creature foe = GetFoe(hero.FoesFelled.Count);
             bool heroSurvives = hero.Encounter(foe);
 
             if (heroSurvives)
@@ -52,8 +52,49 @@ public static class Program
                     $"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse."
                 );
                 Console.WriteLine(
-                    $"You reached level {hero.Level} and felled {hero.FelledFoes} foes before meeting your end."
+                    $"You reached level {hero.Level} and felled {hero.FoesFelled.Count} foes before meeting your end."
                 );
+
+                var defeatedFoes = new Table();
+                defeatedFoes.HideHeaders();
+                defeatedFoes.Border(TableBorder.Simple);
+
+                defeatedFoes.AddColumn("Foe");
+                defeatedFoes.AddColumn("Count");
+
+                if (hero.FoesFelled.Exists(x => x.Name == "Goblin"))
+                {
+                    defeatedFoes.AddRow(
+                        new Text("Goblins:"),
+                        new Text(hero.FoesFelled.Count(x => x.Name == "Goblin").ToString())
+                    );
+                }
+
+                if (hero.FoesFelled.Exists(x => x.Name == "Cultist"))
+                {
+                    defeatedFoes.AddRow(
+                        new Text("Cultists:"),
+                        new Text(hero.FoesFelled.Count(x => x.Name == "Cultist").ToString())
+                    );
+                }
+
+                if (hero.FoesFelled.Exists(x => x.Name == "Manticore"))
+                {
+                    defeatedFoes.AddRow(
+                        new Text("Manticores:"),
+                        new Text(hero.FoesFelled.Count(x => x.Name == "Manticore").ToString())
+                    );
+                }
+
+                if (hero.FoesFelled.Exists(x => x.Name == "Lich"))
+                {
+                    defeatedFoes.AddRow(
+                        new Text("Lichs:"),
+                        new Text(hero.FoesFelled.Count(x => x.Name == "Lich").ToString())
+                    );
+                }
+                AnsiConsole.Write(defeatedFoes);
+
                 AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
             }
         } while (hero.HP > 0);
@@ -165,7 +206,7 @@ public static class Program
                 AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.");
                 AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
 
-                hero.FelledFoes += 1;
+                hero.FoesFelled.Add(foe);
                 hero.Experience += foe.MaxHP + foe.AttackDie;
                 AnsiConsole.MarkupLine(
                     $"[grey][[hero gains {foe.MaxHP} XP for a total {hero.Experience} XP]][/]\n"
@@ -374,7 +415,7 @@ public static class Program
             inventoryString += ", Shield";
 
         AnsiConsole.WriteLine($"Inventory: {inventoryString}");
-        AnsiConsole.WriteLine($"{hero.FelledFoes} foes vanquished\n");
+        AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished\n");
     }
 }
 
@@ -393,9 +434,9 @@ public class Creature(string name, string color, int maxHP, int attackDie, int g
 public class Hero(string name, string color, int maxHP, int attackDie)
     : Creature(name, color, maxHP, attackDie)
 {
-    public int FelledFoes { get; set; } = 0;
     public int Experience { get; set; } = 0;
     public int LevelXP { get; set; } = 25;
     public int Level { get; set; } = 1;
+    public List<Creature> FoesFelled { get; set; } = [];
     public bool CarriesMorningStar { get; set; } = false;
 }
