@@ -183,7 +183,8 @@ public static class Program
                 hero.FoesFelled.Add(foe);
                 hero.Experience += foe.MaxHP + foe.AttackDie;
                 AnsiConsole.MarkupLine(
-                    $"[grey][[hero gains {foe.MaxHP + foe.AttackDie} XP for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
+                    $"[grey][[hero gains {foe.MaxHP + foe.AttackDie} XP "
+                        + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
                 );
 
                 if (hero.Experience >= hero.LevelXP)
@@ -211,12 +212,11 @@ public static class Program
 
                     return false;
                 }
-                else
+                else if (foeAtkDmg > 0)
                 {
-                    if (foeAtkDmg > 0)
-                        Console.WriteLine("You are hurt, but not dead yet.");
-                    Console.WriteLine("You steel your nerves for another attack.\n");
+                    Console.WriteLine("You are hurt, but not dead yet.");
                 }
+                Console.WriteLine("You steel your nerves for another attack.\n");
             }
         } while (foe.HP > 0 && hero.HP > 0);
 
@@ -237,9 +237,7 @@ public static class Program
 
         hero.MaxHP += 3;
         hero.HP = hero.MaxHP;
-        AnsiConsole.MarkupLine(
-            $"Your maximum HP is increased to [green]{hero.MaxHP} HP[/].\n"
-        );
+        AnsiConsole.MarkupLine($"Your maximum HP is increased to [green]{hero.MaxHP} HP[/].\n");
     }
 
     public static void Rest(this Hero hero)
