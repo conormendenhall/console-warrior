@@ -266,10 +266,10 @@ public static class Program
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
     {
-        var rule = new Rule("[royalblue1]Merchant[/]") { Justification = Justify.Left };
+        var rule = new Rule("[purple_1]Merchant[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
-        AnsiConsole.MarkupLine("You encounter a [royalblue1]Merchant[/].");
-        AnsiConsole.MarkupLine("[royalblue1]\"Hello, weary traveler. See anything you like?\"[/]");
+        AnsiConsole.MarkupLine("You encounter a [purple_1]Merchant[/].");
+        AnsiConsole.MarkupLine("[purple_1]\"Hello, weary traveler. See anything you like?\"[/]");
         AnsiConsole.MarkupLine(
             $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
@@ -284,7 +284,7 @@ public static class Program
         if (purchase.Key == "None" || hero.Gold < purchase.Value)
         {
             AnsiConsole.MarkupLine(
-                "[royalblue1]\"Come back when you're ready to spend some coin.\"[/]\n"
+                "[purple_1]\"Come back when you're ready to spend some coin.\"[/]\n"
             );
         }
         else
@@ -300,7 +300,7 @@ public static class Program
                 hero.IsArmored = true;
                 Console.WriteLine("You don the leather armor.");
                 AnsiConsole.MarkupLine(
-                    "[royalblue1]\"You think this will protect you? Good luck.\"[/]"
+                    "[purple_1]\"You think this will protect you? Good luck.\"[/]"
                 );
             }
             else if (purchase.Key == "Shield")
@@ -308,7 +308,7 @@ public static class Program
                 hero.IsShielded = true;
                 Console.WriteLine("You lift the shield.");
                 AnsiConsole.MarkupLine(
-                    "[royalblue1]\"Ah, the trusty shield. May it guard you well\"[/]"
+                    "[purple_1]\"Ah, the trusty shield. May it guard you well\"[/]"
                 );
             }
             else if (purchase.Key == "Morning Star")
@@ -317,7 +317,7 @@ public static class Program
                 hero.CarriesMorningStar = true;
                 Console.WriteLine("You heft the morning star.");
                 AnsiConsole.MarkupLine(
-                    "[royalblue1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
+                    "[purple_1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
                 );
             }
             AnsiConsole.MarkupLine(
