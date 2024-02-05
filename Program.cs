@@ -6,9 +6,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        var font = FigletFont.Load("epic.flf");
-        AnsiConsole.Write(new FigletText(font, "Hello, Warrior!").LeftJustified().Color(Color.Red));
-
+        AnsiConsole.WriteLine("Hello, warrior.");
         var nameInput = AnsiConsole.Prompt(
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
