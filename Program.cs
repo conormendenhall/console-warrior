@@ -238,7 +238,7 @@ public static class Program
         hero.MaxHP += 3;
         hero.HP = hero.MaxHP;
         AnsiConsole.MarkupLine(
-            $"You gain [green]3 HP[/] for a maximum [green]{hero.MaxHP} HP[/].\n"
+            $"Your maximum HP is increased to [green]{hero.MaxHP} HP[/].\n"
         );
     }
 
