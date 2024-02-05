@@ -171,11 +171,13 @@ public static class Program
             int atkDmg = hero.Attack(foe);
             AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
 
-            foe.HealthBar();
+            foe.PrintHealthBar();
 
             if (foe.HP <= 0)
             {
-                AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.");
+                AnsiConsole.MarkupLine(
+                    $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.\n"
+                );
                 AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
 
                 hero.FoesFelled.Add(foe);
@@ -201,7 +203,7 @@ public static class Program
                 int foeAtkDmg = foe.Attack(hero);
                 Console.WriteLine($"You take {foeAtkDmg} damage.");
 
-                hero.HealthBar();
+                hero.PrintHealthBar();
 
                 if (hero.HP <= 0)
                 {
@@ -260,7 +262,8 @@ public static class Program
             );
             hero.HP = hero.MaxHP;
         }
-        hero.HealthBar();
+        hero.PrintHealthBar();
+        Console.WriteLine();
     }
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
@@ -268,11 +271,9 @@ public static class Program
         var rule = new Rule("[royalblue1]Merchant[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine("You encounter a [royalblue1]Merchant[/].");
+        AnsiConsole.MarkupLine("[royalblue1]\"Hello, weary traveler. See anything you like?\"[/]");
         AnsiConsole.MarkupLine(
-            "[royalblue1]\"Hello, weary traveler. See anything you like?\"[/]\n"
-        );
-        AnsiConsole.MarkupLine(
-            $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]"
+            $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
 
         var purchase = AnsiConsole.Prompt(
@@ -303,7 +304,6 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     "[royalblue1]\"You think this will protect you? Good luck.\"[/]"
                 );
-                AnsiConsole.MarkupLine($"You are left with [orange1]{hero.Gold} gold[/] pieces.\n");
             }
             else if (purchase.Key == "Shield")
             {
@@ -312,7 +312,6 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     "[royalblue1]\"Ah, the trusty shield. May it guard you well\"[/]"
                 );
-                AnsiConsole.MarkupLine($"You are left with [orange1]{hero.Gold} gold[/] pieces.\n");
             }
             else if (purchase.Key == "Morning Star")
             {
@@ -322,12 +321,14 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     "[royalblue1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
                 );
-                AnsiConsole.MarkupLine($"You are left with [orange1]{hero.Gold} gold[/] pieces.\n");
             }
+            AnsiConsole.MarkupLine(
+                $"[grey][[you are left with[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
+            );
         }
     }
 
-    public static void HealthBar(this Creature creature)
+    public static void PrintHealthBar(this Creature creature)
     {
         AnsiConsole.Write(
             new BreakdownChart()
@@ -343,9 +344,11 @@ public static class Program
         var rule = new Rule("Report") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
+        hero.PrintHealthBar();
+        AnsiConsole.MarkupLine($"[red]{hero.Name}[/]");
         Console.WriteLine($"Level {hero.Level}");
+        AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished");
 
-        hero.HealthBar();
         AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/]");
 
         var inventoryString = "Short Sword";
@@ -357,8 +360,7 @@ public static class Program
         if (hero.IsShielded)
             inventoryString += ", Shield";
 
-        AnsiConsole.WriteLine($"Inventory: {inventoryString}");
-        AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished\n");
+        AnsiConsole.WriteLine($"Inventory: {inventoryString}\n");
     }
 
     public static void ReportFelledFoes(this Hero hero)
