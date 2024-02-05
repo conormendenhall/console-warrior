@@ -172,7 +172,7 @@ public static class Program
             AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
 
             foe.PrintHealth();
-            AnsiConsole.Write(foe.HealthTable());
+            foe.HealthBar();
 
             if (foe.HP <= 0)
             {
@@ -203,7 +203,7 @@ public static class Program
                 Console.WriteLine($"You take {foeAtkDmg} damage.");
 
                 hero.PrintHealth();
-                AnsiConsole.Write(hero.HealthTable());
+                hero.HealthBar();
 
                 if (hero.HP <= 0)
                 {
@@ -263,7 +263,7 @@ public static class Program
             hero.HP = hero.MaxHP;
         }
         hero.PrintHealth();
-        AnsiConsole.Write(hero.HealthTable());
+        hero.HealthBar();
     }
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
@@ -330,21 +330,15 @@ public static class Program
         }
     }
 
-    public static Canvas HealthBar(this Creature creature)
+    public static void HealthBar(this Creature creature)
     {
-        var canvas = new Canvas(creature.MaxHP, 1);
-        var displayHP = Math.Max(creature.HP, 0);
-
-        for (var i = 0; i < displayHP; i++)
-        {
-            canvas.SetPixel(i, 0, Color.Green);
-        }
-        for (var i = displayHP; i < creature.MaxHP; i++)
-        {
-            canvas.SetPixel(i, 0, Color.Red);
-        }
-
-        return canvas;
+        AnsiConsole.Write(
+            new BreakdownChart()
+                .Width(creature.MaxHP)
+                .AddItem("Health", creature.HP, Color.Green)
+                .AddItem("Not", creature.MaxHP - creature.HP, Color.Red)
+                .HideTags()
+        );
     }
 
     public static void PrintHealth(this Creature creature)
@@ -354,20 +348,6 @@ public static class Program
         );
     }
 
-    public static Table HealthTable(this Creature creature)
-    {
-        var table = new Table();
-        table.HideHeaders();
-        table.Border(TableBorder.Simple);
-
-        table.AddColumn("Combatant");
-        table.AddColumn("Health");
-
-        table.AddRow(new Markup($"[{creature.Color}]{creature.Name}[/]"), creature.HealthBar());
-
-        return table;
-    }
-
     public static void Report(this Hero hero)
     {
         var rule = new Rule("Report") { Justification = Justify.Left };
@@ -375,7 +355,7 @@ public static class Program
 
         Console.WriteLine($"Level {hero.Level}");
 
-        AnsiConsole.Write(hero.HealthTable());
+        hero.HealthBar();
         AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/]");
 
         var inventoryString = "Short Sword";
