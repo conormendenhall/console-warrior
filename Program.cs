@@ -171,7 +171,6 @@ public static class Program
             int atkDmg = hero.Attack(foe);
             AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
 
-            foe.PrintHealth();
             foe.HealthBar();
 
             if (foe.HP <= 0)
@@ -202,7 +201,6 @@ public static class Program
                 int foeAtkDmg = foe.Attack(hero);
                 Console.WriteLine($"You take {foeAtkDmg} damage.");
 
-                hero.PrintHealth();
                 hero.HealthBar();
 
                 if (hero.HP <= 0)
@@ -262,7 +260,6 @@ public static class Program
             );
             hero.HP = hero.MaxHP;
         }
-        hero.PrintHealth();
         hero.HealthBar();
     }
 
@@ -338,13 +335,6 @@ public static class Program
                 .AddItem("Health", creature.HP, Color.Green)
                 .AddItem("Not", creature.MaxHP - creature.HP, Color.Red)
                 .HideTags()
-        );
-    }
-
-    public static void PrintHealth(this Creature creature)
-    {
-        AnsiConsole.MarkupLine(
-            $"[grey][[{creature.Name} has[/] [green]{creature.HP} HP[/][grey]]][/]"
         );
     }
 
