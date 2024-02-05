@@ -6,7 +6,8 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        AnsiConsole.WriteLine("Hello, warrior.");
+        AnsiConsole.Write(new Rule("[red]Hello, warrior[/]") { Justification = Justify.Left });
+
         var nameInput = AnsiConsole.Prompt(
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
@@ -45,6 +46,19 @@ public static class Program
             else
             {
                 hero.DeathReport();
+                if (AnsiConsole.Confirm("Play again?"))
+                {
+                    hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5);
+                    merchantInventory = new()
+                    {
+                        { "Leather Armor", 8 },
+                        { "Shield", 10 },
+                        { "Morning Star", 12 },
+                        { "None", null }
+                    };
+
+                    AnsiConsole.MarkupLine("\n[red]Hello again, warrior[/]\n");
+                }
             }
         } while (hero.HP > 0);
     }
@@ -431,7 +445,7 @@ public static class Program
 
         hero.ReportFelledFoes();
 
-        AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].");
+        AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].\n");
     }
 }
 
