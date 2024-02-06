@@ -118,11 +118,11 @@ public static class Program
         );
     }
 
-    public static int Attack(this Creature attacker, Creature foe)
+    public static int Attack(this Creature attacker, Creature defender)
     {
         Random rdm = new();
 
-        bool miss = foe.IsShielded && rdm.Next(1, 5) == 1;
+        bool miss = defender.IsShielded && rdm.Next(1, 5) == 1;
 
         if (miss)
         {
@@ -135,22 +135,24 @@ public static class Program
         int atkDmg = rdm.Next(1, attacker.AttackDie);
         int dmgReduction = 0;
 
-        if (foe.IsArmored)
+        if (defender.IsArmored)
         {
             dmgReduction = rdm.Next(1, 4);
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
 
             if (atkDmg <= 0)
             {
-                AnsiConsole.MarkupLine($"[grey][[armor negated all attack damage]][/]\n");
+                AnsiConsole.MarkupLine(
+                    $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s armor negated all attack damage]][/]\n"
+                );
                 return 0;
             }
         }
-        var oldHP = foe.HP;
-        foe.HP -= atkDmg;
+        var oldHP = defender.HP;
+        defender.HP -= atkDmg;
 
         AnsiConsole.MarkupLine(
-            $"[{attacker.Color}]{attacker.Name}[/] attacks [{foe.Color}]{foe.Name}[/] for..."
+            $"[{attacker.Color}]{attacker.Name}[/] attacks [{defender.Color}]{defender.Name}[/] for..."
         );
 
         AnsiConsole
@@ -168,12 +170,14 @@ public static class Program
         Console.WriteLine();
         AnsiConsole.MarkupLine($"[red]{atkDmg}[/] damage\n");
 
-        foe.LiveHealthBar(oldHP);
+        defender.LiveHealthBar(oldHP);
 
         if (dmgReduction > 0)
         {
             Thread.Sleep(500);
-            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
+            AnsiConsole.MarkupLine(
+                $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s armor reduced damage by {dmgReduction}]][/]"
+            );
         }
 
         return atkDmg;
