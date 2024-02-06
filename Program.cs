@@ -8,11 +8,11 @@ public static class Program
     {
         AnsiConsole.Write(new Rule("[red]Hello, warrior[/]") { Justification = Justify.Left });
 
-        var nameInput = AnsiConsole.Prompt(
+        string nameInput = AnsiConsole.Prompt(
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
-        string warriorName = string.IsNullOrWhiteSpace(nameInput) ? "Nameless Warrior" : nameInput;
-        var hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5);
+        string heroName = string.IsNullOrWhiteSpace(nameInput) ? "Nameless Warrior" : nameInput;
+        var hero = GetFreshHero(heroName);
 
         Dictionary<string, int?> merchantInventory =
             new()
@@ -33,7 +33,8 @@ public static class Program
 
             if (heroSurvives)
             {
-                hero.Report();
+                Pause("View character sheet");
+                hero.PrintCharacterSheet();
 
                 if (hero.HP < hero.MaxHP)
                 {
@@ -48,7 +49,7 @@ public static class Program
                 hero.DeathReport();
                 if (AnsiConsole.Confirm("Play again?"))
                 {
-                    hero = new Hero(name: warriorName, color: "red", maxHP: 5, attackDie: 5);
+                    hero = GetFreshHero(heroName);
                     merchantInventory = new()
                     {
                         { "Leather Armor", 8 },
@@ -57,11 +58,15 @@ public static class Program
                         { "None", null }
                     };
 
-                    AnsiConsole.MarkupLine("\n[red]Hello again, warrior[/]\n");
+                    Console.WriteLine();
+                    AnsiConsole.MarkupLine("[red]Hello again, warrior[/]\n");
                 }
             }
         } while (hero.HP > 0);
     }
+
+    public static Hero GetFreshHero(string heroName) =>
+        new(name: heroName, color: "red", maxHP: 5, attackDie: 6);
 
     public static Style SelectStyle => new Style().Foreground(Color.Red);
 
@@ -127,12 +132,13 @@ public static class Program
             $"You loot the [{corpse.Color}]{corpse.Name}[/] for [orange1]{corpse.Gold} gold[/] pieces. "
                 + "You drop them into your coinpurse."
         );
+        Thread.Sleep(500);
         AnsiConsole.MarkupLine(
             $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
     }
 
-    public static int Attack(this Creature hero, Creature foe)
+    public static int Attack(this Creature attacker, Creature foe)
     {
         Random rdm = new();
 
@@ -144,15 +150,51 @@ public static class Program
             return 0;
         }
 
-        int atkDmg = rdm.Next(1, hero.AttackDie);
+        int atkDmg = rdm.Next(1, attacker.AttackDie);
+        int dmgReduction = 0;
 
         if (foe.IsArmored)
         {
-            int dmgReduction = rdm.Next(1, 4);
-            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
+            dmgReduction = rdm.Next(1, 4);
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
+
+            if (atkDmg <= 0)
+            {
+                AnsiConsole.MarkupLine($"[grey][[armor negated all attack damage]][/]\n");
+                return 0;
+            }
         }
+        var oldHP = foe.HP;
         foe.HP -= atkDmg;
+
+        AnsiConsole.MarkupLine(
+            $"[{attacker.Color}]{attacker.Name}[/] attacks [{foe.Color}]{foe.Name}[/] for..."
+        );
+
+        AnsiConsole
+            .Status()
+            .Spinner(Spinner.Known.Star)
+            .SpinnerStyle(Style.Parse("red"))
+            .Start(
+                $"damage",
+                ctx =>
+                {
+                    Thread.Sleep(1000);
+                }
+            );
+
+        Console.WriteLine();
+        AnsiConsole.MarkupLine($"[red]{atkDmg}[/] damage\n");
+
+        foe.LiveHealthBar(oldHP);
+
+        if (dmgReduction > 0)
+        {
+            Thread.Sleep(500);
+            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]\n");
+        }
+
+        Thread.Sleep(500);
 
         return atkDmg;
     }
@@ -166,12 +208,8 @@ public static class Program
         do
         {
             Pause("Attack");
-            Console.WriteLine("You attack!");
-
-            int atkDmg = hero.Attack(foe);
-            AnsiConsole.MarkupLine($"[{foe.Color}]{foe.Name}[/] takes {atkDmg} damage.");
-
-            foe.PrintHealthBar();
+            hero.Attack(foe);
+            Console.WriteLine();
 
             if (foe.HP <= 0)
             {
@@ -182,6 +220,8 @@ public static class Program
 
                 hero.FoesFelled.Add(foe);
                 hero.Experience += foe.MaxHP + foe.AttackDie;
+
+                Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
                     $"[grey][[hero gains {foe.MaxHP + foe.AttackDie} XP "
                         + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
@@ -200,11 +240,9 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n"
                 );
-                AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] attacks!");
-                int foeAtkDmg = foe.Attack(hero);
-                Console.WriteLine($"You take {foeAtkDmg} damage.");
+                Thread.Sleep(1000);
 
-                hero.PrintHealthBar();
+                int foeAtkDmg = foe.Attack(hero);
 
                 if (hero.HP <= 0)
                 {
@@ -233,10 +271,14 @@ public static class Program
 
         hero.Experience -= hero.LevelXP;
         hero.LevelXP += hero.LevelXP / 5;
+
+        Thread.Sleep(500);
         AnsiConsole.MarkupLine($"[grey][[next level at {hero.LevelXP} XP]][/]\n");
 
         hero.MaxHP += 3;
         hero.HP = hero.MaxHP;
+
+        Thread.Sleep(500);
         AnsiConsole.MarkupLine($"Your maximum HP is increased to [green]{hero.MaxHP} HP[/].\n");
     }
 
@@ -245,22 +287,19 @@ public static class Program
         var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
+        int oldHP = hero.HP;
         Random rdm = new();
-        int restHP = rdm.Next(1, 5);
 
-        if (hero.HP + restHP <= hero.MaxHP)
-        {
-            AnsiConsole.MarkupLine($"You rest and restore [green]{restHP} HP[/].");
-            hero.HP += restHP;
-        }
+        int newHP = Math.Min(hero.HP + rdm.Next(1, 5), hero.MaxHP);
+        int restHP = newHP - oldHP;
+        hero.HP += restHP;
+
+        if (hero.HP == hero.MaxHP)
+            AnsiConsole.MarkupLine($"You gain [green]{restHP} HP[/] and feel fully restored.");
         else
-        {
-            AnsiConsole.MarkupLine(
-                $"You gain [green]{hero.MaxHP - hero.HP} HP[/] and feel fully restored."
-            );
-            hero.HP = hero.MaxHP;
-        }
-        hero.PrintHealthBar();
+            AnsiConsole.MarkupLine($"You rest and restore [green]{restHP} HP[/].");
+
+        hero.LiveHealthBar(oldHP);
         Console.WriteLine();
     }
 
@@ -270,10 +309,13 @@ public static class Program
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine("You encounter a [purple_1]Merchant[/].");
         AnsiConsole.MarkupLine("[purple_1]\"Hello, weary traveler. See anything you like?\"[/]");
+
+        Thread.Sleep(500);
         AnsiConsole.MarkupLine(
             $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
 
+        Thread.Sleep(500);
         var purchase = AnsiConsole.Prompt(
             new SelectionPrompt<KeyValuePair<string, int?>>()
                 .HighlightStyle(SelectStyle)
@@ -299,6 +341,7 @@ public static class Program
             {
                 hero.IsArmored = true;
                 Console.WriteLine("You don the leather armor.");
+                Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
                     "[purple_1]\"You think this will protect you? Good luck.\"[/]"
                 );
@@ -307,6 +350,7 @@ public static class Program
             {
                 hero.IsShielded = true;
                 Console.WriteLine("You lift the shield.");
+                Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
                     "[purple_1]\"Ah, the trusty shield. May it guard you well\"[/]"
                 );
@@ -316,10 +360,12 @@ public static class Program
                 hero.AttackDie = 8;
                 hero.CarriesMorningStar = true;
                 Console.WriteLine("You heft the morning star.");
+                Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
                     "[purple_1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
                 );
             }
+            Thread.Sleep(500);
             AnsiConsole.MarkupLine(
                 $"[grey][[you are left with[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
             );
@@ -337,28 +383,74 @@ public static class Program
         );
     }
 
-    public static void Report(this Hero hero)
+    public static void LiveHealthBar(this Creature creature, int oldHP)
     {
-        var rule = new Rule("Report") { Justification = Justify.Left };
+        var healthSegment = new BreakdownChartItem("Health", oldHP, Color.Green);
+        var damageSegment = new BreakdownChartItem("Damage", creature.MaxHP - oldHP, Color.Red);
+        var chart = new BreakdownChart()
+            .Width(creature.MaxHP)
+            .AddItems([healthSegment, damageSegment])
+            .HideTags();
+
+        var steps = Math.Abs(creature.HP - oldHP);
+
+        AnsiConsole
+            .Live(chart)
+            .Start(ctx =>
+            {
+                Thread.Sleep(500);
+                for (var i = 1; i <= steps; i++)
+                {
+                    ctx.Refresh();
+                    Thread.Sleep(500 / steps);
+                    chart.Data.RemoveAll(x => true);
+
+                    int displayHP;
+                    if (oldHP > creature.HP)
+                        displayHP = oldHP - i;
+                    else
+                        displayHP = oldHP + i;
+
+                    chart.AddItem("Health", displayHP, Color.Green);
+                    chart.AddItem("Damage", creature.MaxHP - displayHP, Color.Red);
+                    ctx.Refresh();
+                }
+                Thread.Sleep(500 / steps);
+            });
+    }
+
+    public static void PrintCharacterSheet(this Hero hero)
+    {
+        var rule = new Rule($"[{hero.Color}]{hero.Name}[/] - Level {hero.Level}")
+        {
+            Justification = Justify.Left,
+        };
         AnsiConsole.Write(rule);
 
+        Thread.Sleep(250);
         hero.PrintHealthBar();
-        AnsiConsole.MarkupLine($"[red]{hero.Name}[/]");
-        Console.WriteLine($"Level {hero.Level}");
+
+        Thread.Sleep(250);
         AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished");
 
+        Thread.Sleep(250);
+        AnsiConsole.WriteLine($"{hero.Experience} XP");
+
+        Thread.Sleep(250);
         AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/]");
 
-        var inventoryString = "Short Sword";
+        Thread.Sleep(250);
+        Console.WriteLine("Inventory:");
+        var inventoryString = "  Short Sword (d6)";
 
         if (hero.CarriesMorningStar)
-            inventoryString = "Morning Star";
+            inventoryString = "\n  Morning Star (d8)";
         if (hero.IsArmored)
-            inventoryString += ", Leather Armor";
+            inventoryString += "\n  Leather Armor (-d4)";
         if (hero.IsShielded)
-            inventoryString += ", Shield";
+            inventoryString += "\n  Shield";
 
-        AnsiConsole.WriteLine($"Inventory: {inventoryString}\n");
+        AnsiConsole.WriteLine($"{inventoryString}\n");
     }
 
     public static void ReportFelledFoes(this Hero hero)
