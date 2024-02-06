@@ -33,6 +33,9 @@ public static class Program
 
             if (heroSurvives)
             {
+                Pause("Loot");
+                hero.Loot(foe);
+
                 Pause("View character sheet");
                 hero.PrintCharacterSheet();
 
@@ -146,7 +149,7 @@ public static class Program
             {
                 AnsiConsole.MarkupLine(
                     $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
-                        + "armor negates all damage]][/]\n"
+                        + "armor negates all damage]][/]"
                 );
                 return 0;
             }
@@ -193,58 +196,79 @@ public static class Program
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
 
-        do
+        Random rdm = new();
+        var heroAttacksFirst = rdm.Next(2) == 1;
+
+        if (heroAttacksFirst)
+            AnsiConsole.MarkupLine($"You strike the [{foe.Color}]{foe.Name}[/] first!\n");
+        else
+            AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] gets the drop on you!\n");
+
+        Creature attacker = heroAttacksFirst ? hero : foe;
+        Creature defender = heroAttacksFirst ? foe : hero;
+
+        bool heroAttacking = heroAttacksFirst;
+
+        while (foe.HP > 0 && hero.HP > 0)
         {
-            Pause("Attack");
-            hero.Attack(foe);
+            if (heroAttacking)
+            {
+                Pause("Attack");
+            }
+            int atkDmg = attacker.Attack(defender);
             Console.WriteLine();
 
-            if (foe.HP <= 0)
+            if (defender.HP <= 0)
             {
-                AnsiConsole.MarkupLine(
-                    $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.\n"
-                );
-                AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
-
-                hero.FoesFelled.Add(foe);
-                hero.Experience += foe.MaxHP + foe.AttackDie;
-
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine(
-                    $"[grey][[You gain {foe.MaxHP + foe.AttackDie} XP "
-                        + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
-                );
-
-                if (hero.Experience >= hero.LevelXP)
-                    hero.LevelUp();
-
-                Pause("Loot");
-                hero.Loot(foe);
-
-                return true;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine(
-                    $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n"
-                );
-                Pause("End turn");
-
-                int foeAtkDmg = foe.Attack(hero);
-
-                if (hero.HP <= 0)
+                if (!heroAttacking)
                 {
                     AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] strikes you down.\n");
 
                     return false;
                 }
-                else if (foeAtkDmg > 0)
+                else
                 {
-                    Console.WriteLine("\nYou are hurt, but not dead yet.");
+                    AnsiConsole.MarkupLine(
+                        $"The [{foe.Color}]{foe.Name}[/] falls dead at your feet.\n"
+                    );
+                    AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
+
+                    hero.FoesFelled.Add(foe);
+                    hero.Experience += foe.MaxHP + foe.AttackDie;
+
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        $"[grey][[You gain {foe.MaxHP + foe.AttackDie} XP "
+                            + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
+                    );
+
+                    if (hero.Experience >= hero.LevelXP)
+                        hero.LevelUp();
+
+                    return true;
                 }
-                Console.WriteLine("You steel your nerves for another attack.\n");
             }
-        } while (foe.HP > 0 && hero.HP > 0);
+            else
+            {
+                if (heroAttacking)
+                {
+                    AnsiConsole.MarkupLine(
+                        $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n"
+                    );
+                    Pause("End turn");
+                }
+                else
+                {
+                    if (atkDmg > 0)
+                        Console.WriteLine("\nYou are hurt, but not dead yet.");
+                    Console.WriteLine("You steel your nerves for another attack.\n");
+                }
+
+                attacker = heroAttacking ? foe : hero;
+                defender = heroAttacking ? hero : foe;
+                heroAttacking = !heroAttacking;
+            }
+        }
 
         return true;
     }
