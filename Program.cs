@@ -46,7 +46,7 @@ public static class Program
             }
             else
             {
-                hero.DeathReport();
+                hero.PrintDeathReport();
                 if (AnsiConsole.Confirm("Play again?"))
                 {
                     hero = GetFreshHero(heroName);
@@ -114,7 +114,8 @@ public static class Program
         );
         Thread.Sleep(500);
         AnsiConsole.MarkupLine(
-            $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
+            $"[grey][[[/][{hero.Color}]{hero.Name}[/][grey] is carrying[/] "
+                + $"[orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
     }
 
@@ -127,7 +128,8 @@ public static class Program
         if (miss)
         {
             AnsiConsole.MarkupLine(
-                $"[{attacker.Color}]{attacker.Name}[/] deflected the attack with a shield.\n"
+                $"[{defender.Color}]{defender.Name}[/] deflects "
+                    + $"[{attacker.Color}]{attacker.Name}[/]'s attack with a shield.\n"
             );
             return 0;
         }
@@ -143,7 +145,8 @@ public static class Program
             if (atkDmg <= 0)
             {
                 AnsiConsole.MarkupLine(
-                    $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s armor negated all attack damage]][/]\n"
+                    $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
+                        + "armor negates all damage]][/]\n"
                 );
                 return 0;
             }
@@ -176,7 +179,8 @@ public static class Program
         {
             Thread.Sleep(500);
             AnsiConsole.MarkupLine(
-                $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s armor reduced damage by {dmgReduction}]][/]"
+                $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
+                    + $"armor reduced damage by {dmgReduction}]][/]"
             );
         }
 
@@ -207,7 +211,7 @@ public static class Program
 
                 Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
-                    $"[grey][[hero gains {foe.MaxHP + foe.AttackDie} XP "
+                    $"[grey][[You gain {foe.MaxHP + foe.AttackDie} XP "
                         + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
                 );
 
@@ -263,7 +267,7 @@ public static class Program
         hero.HP = hero.MaxHP;
 
         Thread.Sleep(500);
-        AnsiConsole.MarkupLine($"Your maximum HP is increased to [green]{hero.MaxHP} HP[/].\n");
+        AnsiConsole.MarkupLine($"Your health maximum increases to [green]{hero.MaxHP} HP[/].\n");
     }
 
     public static void Rest(this Hero hero)
@@ -296,7 +300,8 @@ public static class Program
 
         Thread.Sleep(500);
         AnsiConsole.MarkupLine(
-            $"[grey][[hero is carrying[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
+            $"[grey][[[/][{hero.Color}]{hero.Name}[/][grey] is carrying[/] "
+                + $"[orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
         );
 
         Thread.Sleep(500);
@@ -304,7 +309,9 @@ public static class Program
             new SelectionPrompt<KeyValuePair<string, int?>>()
                 .HighlightStyle(SelectStyle)
                 .AddChoices(merchantInventory)
-                .UseConverter(pair => $"{pair.Key} {pair.Value}")
+                .UseConverter(pair =>
+                    $"{pair.Key} {(pair.Value.HasValue ? "(" + pair.Value + " gold)" : "")}"
+                )
         );
 
         if (purchase.Key == "None" || hero.Gold < purchase.Value)
@@ -351,7 +358,8 @@ public static class Program
             }
             Thread.Sleep(500);
             AnsiConsole.MarkupLine(
-                $"[grey][[you are left with[/] [orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
+                $"[grey][[[/][{hero.Color}]{hero.Name}[/][grey] is left with[/] "
+                    + $"[orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
             );
         }
     }
@@ -415,9 +423,6 @@ public static class Program
         hero.PrintHealthBar();
 
         Thread.Sleep(250);
-        AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished");
-
-        Thread.Sleep(250);
         AnsiConsole.WriteLine($"{hero.Experience} XP");
 
         Thread.Sleep(250);
@@ -434,10 +439,16 @@ public static class Program
         if (hero.IsShielded)
             inventoryString += "\n  Shield";
 
-        AnsiConsole.WriteLine($"{inventoryString}\n");
+        AnsiConsole.WriteLine($"{inventoryString}");
+
+        Thread.Sleep(250);
+        AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished");
+
+        Thread.Sleep(250);
+        hero.PrintFelledFoes();
     }
 
-    public static void ReportFelledFoes(this Hero hero)
+    public static void PrintFelledFoes(this Hero hero)
     {
         var felledFoes = new Table();
         felledFoes.HideHeaders();
@@ -480,16 +491,17 @@ public static class Program
         AnsiConsole.Write(felledFoes);
     }
 
-    public static void DeathReport(this Hero hero)
+    public static void PrintDeathReport(this Hero hero)
     {
         var rule = new Rule("Death") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"[orange1]{hero.Gold} gold[/] pieces spill out of your coinpurse.");
         Console.WriteLine(
-            $"You reached level {hero.Level} and felled {hero.FoesFelled.Count} foes before meeting your end."
+            $"You reached level {hero.Level} and felled {hero.FoesFelled.Count} foes "
+                + "before meeting your end."
         );
 
-        hero.ReportFelledFoes();
+        hero.PrintFelledFoes();
 
         AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].\n");
     }
