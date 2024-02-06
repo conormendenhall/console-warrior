@@ -77,44 +77,21 @@ public static class Program
 
     public static List<Creature> Foes =>
         [
-            new Creature(
-                name: "Goblin",
-                color: "chartreuse3",
-                maxHP: 5,
-                attackDie: 4,
-                gold: 4,
-                level: 1
-            ),
-            new Creature(
-                name: "Cultist",
-                color: "orangered1",
-                maxHP: 8,
-                attackDie: 6,
-                gold: 6,
-                level: 2
-            ),
+            new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 4, level: 1),
+            new Creature(name: "Cultist", color: "orangered1", maxHP: 8, attackDie: 6, level: 2),
             new Creature(
                 name: "Manticore",
                 color: "darkgoldenrod",
                 maxHP: 15,
                 attackDie: 9,
-                gold: 8,
                 level: 3
             ),
-            new Creature(
-                name: "Lich",
-                color: "royalblue1",
-                maxHP: 18,
-                attackDie: 12,
-                gold: 15,
-                level: 4
-            ),
+            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, attackDie: 12, level: 4),
             new Creature(
                 name: "Leviathan",
                 color: "red",
                 maxHP: 50,
                 attackDie: 35,
-                gold: 100,
                 level: int.MaxValue
             ),
         ];
@@ -127,9 +104,12 @@ public static class Program
         var rule = new Rule("Loot") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
-        hero.Gold += corpse.Gold;
+        Random rdm = new();
+        var loot = rdm.Next(1, corpse.LootDie);
+
+        hero.Gold += loot;
         AnsiConsole.MarkupLine(
-            $"You loot the [{corpse.Color}]{corpse.Name}[/] for [orange1]{corpse.Gold} gold[/] pieces. "
+            $"You loot the [{corpse.Color}]{corpse.Name}[/] for [orange1]{loot} gold[/] pieces. "
                 + "You drop them into your coinpurse."
         );
         Thread.Sleep(500);
@@ -146,7 +126,7 @@ public static class Program
 
         if (miss)
         {
-            Console.WriteLine("The shield deflected the attack.");
+            Console.WriteLine("The shield deflected the attack.\n");
             return 0;
         }
 
@@ -194,8 +174,6 @@ public static class Program
             AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]\n");
         }
 
-        Thread.Sleep(500);
-
         return atkDmg;
     }
 
@@ -240,7 +218,7 @@ public static class Program
                 AnsiConsole.MarkupLine(
                     $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n"
                 );
-                Thread.Sleep(1000);
+                Pause("End turn");
 
                 int foeAtkDmg = foe.Attack(hero);
 
@@ -252,7 +230,7 @@ public static class Program
                 }
                 else if (foeAtkDmg > 0)
                 {
-                    Console.WriteLine("You are hurt, but not dead yet.");
+                    Console.WriteLine("\nYou are hurt, but not dead yet.");
                 }
                 Console.WriteLine("You steel your nerves for another attack.\n");
             }
@@ -511,21 +489,14 @@ public static class Program
     }
 }
 
-public class Creature(
-    string name,
-    string color,
-    int maxHP,
-    int attackDie,
-    int gold = 0,
-    int level = 1
-)
+public class Creature(string name, string color, int maxHP, int attackDie, int level = 1)
 {
     public string Name { get; set; } = name;
     public string Color { get; set; } = color;
     public int HP { get; set; } = maxHP;
     public int MaxHP { get; set; } = maxHP;
     public int AttackDie { get; set; } = attackDie;
-    public int Gold { get; set; } = gold;
+    public int LootDie { get; set; } = maxHP + attackDie;
     public bool IsArmored { get; set; } = false;
     public bool IsShielded { get; set; } = false;
     public int Level { get; set; } = level;
@@ -536,6 +507,7 @@ public class Hero(string name, string color, int maxHP, int attackDie)
 {
     public int Experience { get; set; } = 0;
     public int LevelXP { get; set; } = 20;
+    public int Gold { get; set; } = 0;
     public List<Creature> FoesFelled { get; set; } = [];
     public bool CarriesMorningStar { get; set; } = false;
 }
