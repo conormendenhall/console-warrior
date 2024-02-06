@@ -126,7 +126,9 @@ public static class Program
 
         if (miss)
         {
-            Console.WriteLine("The shield deflected the attack.\n");
+            AnsiConsole.MarkupLine(
+                $"[{attacker.Color}]{attacker.Name}[/] deflected the attack with a shield.\n"
+            );
             return 0;
         }
 
@@ -171,7 +173,7 @@ public static class Program
         if (dmgReduction > 0)
         {
             Thread.Sleep(500);
-            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]\n");
+            AnsiConsole.MarkupLine($"[grey][[armor reduced damage by {dmgReduction}]][/]");
         }
 
         return atkDmg;
