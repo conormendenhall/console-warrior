@@ -33,19 +33,16 @@ public static class Program
 
             if (heroSurvives)
             {
-                Pause("Loot");
                 hero.Loot(foe);
 
-                Pause("View character sheet");
                 hero.PrintCharacterSheet();
 
                 if (hero.HP < hero.MaxHP)
                 {
-                    Pause("Rest");
                     hero.Rest();
                 }
-                Pause("Trade");
-                hero.VisitMerchant(merchantInventory);
+                if (merchantInventory.Count > 1)
+                    hero.VisitMerchant(merchantInventory);
             }
             else
             {
@@ -89,7 +86,7 @@ public static class Program
                 attackDie: 9,
                 level: 3
             ),
-            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, attackDie: 12, level: 4),
+            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, attackDie: 12, level: 5),
             new Creature(
                 name: "Leviathan",
                 color: "red",
@@ -104,11 +101,12 @@ public static class Program
 
     public static void Loot(this Hero hero, Creature corpse)
     {
+        Pause("Loot");
         var rule = new Rule("Loot") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
         Random rdm = new();
-        var loot = rdm.Next(1, corpse.LootDie);
+        var loot = rdm.Next(1, corpse.LootDie + 1);
 
         hero.Gold += loot;
         AnsiConsole.MarkupLine(
@@ -126,23 +124,23 @@ public static class Program
     {
         Random rdm = new();
 
-        bool miss = defender.IsShielded && rdm.Next(1, 5) == 1;
+        bool miss = defender.IsShielded && rdm.Next(1, 6) == 1;
 
         if (miss)
         {
             AnsiConsole.MarkupLine(
                 $"[{defender.Color}]{defender.Name}[/] deflects "
-                    + $"[{attacker.Color}]{attacker.Name}[/]'s attack with a shield.\n"
+                    + $"[{attacker.Color}]{attacker.Name}[/]'s attack with a shield."
             );
             return 0;
         }
 
-        int atkDmg = rdm.Next(1, attacker.AttackDie);
+        int atkDmg = rdm.Next(1, attacker.AttackDie + 1);
         int dmgReduction = 0;
 
         if (defender.IsArmored)
         {
-            dmgReduction = rdm.Next(1, 4);
+            dmgReduction = rdm.Next(1, 5);
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
 
             if (atkDmg <= 0)
@@ -195,6 +193,7 @@ public static class Program
         var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
+        Thread.Sleep(1000);
 
         Random rdm = new();
         var heroAttacksFirst = rdm.Next(2) == 1;
@@ -203,6 +202,7 @@ public static class Program
             AnsiConsole.MarkupLine($"You strike the [{foe.Color}]{foe.Name}[/] first!\n");
         else
             AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] gets the drop on you!\n");
+        Thread.Sleep(500);
 
         Creature attacker = heroAttacksFirst ? hero : foe;
         Creature defender = heroAttacksFirst ? foe : hero;
@@ -260,7 +260,7 @@ public static class Program
                 else
                 {
                     if (atkDmg > 0)
-                        Console.WriteLine("\nYou are hurt, but not dead yet.");
+                        Console.WriteLine("You are hurt, but not dead yet.");
                     Console.WriteLine("You steel your nerves for another attack.\n");
                 }
 
@@ -296,6 +296,7 @@ public static class Program
 
     public static void Rest(this Hero hero)
     {
+        Pause("Rest");
         var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
@@ -317,6 +318,7 @@ public static class Program
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
     {
+        Pause("Trade");
         var rule = new Rule("[purple_1]Merchant[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine("You encounter a [purple_1]Merchant[/].");
@@ -437,6 +439,7 @@ public static class Program
 
     public static void PrintCharacterSheet(this Hero hero)
     {
+        Pause("View character sheet");
         var rule = new Rule($"[{hero.Color}]{hero.Name}[/] - Level {hero.Level}")
         {
             Justification = Justify.Left,
