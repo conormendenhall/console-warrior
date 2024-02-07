@@ -39,7 +39,7 @@ public static class Program
             }
             else
             {
-                hero.PrintDeathReport();
+                hero.PrintDeathReport(foe);
                 if (AnsiConsole.Confirm("Play again?"))
                 {
                     hero = RefreshHero(heroName);
@@ -79,15 +79,19 @@ public static class Program
     public static List<Creature> Foes =>
         [
             new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, damageDie: 3, level: 1),
-            new Creature(name: "Cultist", color: "orangered1", maxHP: 8, damageDie: 6, level: 2),
+            new Creature(name: "Skeleton", color: "grey", maxHP: 5, damageDie: 5, level: 2),
+            new Creature(name: "Brigand", color: "orange4", maxHP: 6, damageDie: 7, level: 3),
+            new Creature(name: "Cultist", color: "orangered1", maxHP: 7, damageDie: 9, level: 4),
+            new Creature(name: "Cyclops", color: "turquoise4", maxHP: 10, damageDie: 9, level: 5),
+            new Creature(name: "Hag", color: "rosybrown", maxHP: 13, damageDie: 10, level: 6),
             new Creature(
                 name: "Manticore",
                 color: "darkgoldenrod",
-                maxHP: 15,
-                damageDie: 9,
-                level: 3
+                maxHP: 16,
+                damageDie: 11,
+                level: 7
             ),
-            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, damageDie: 12, level: 5),
+            new Creature(name: "Lich", color: "royalblue1", maxHP: 19, damageDie: 13, level: 8),
             new Creature(
                 name: "Leviathan",
                 color: "red",
@@ -274,7 +278,7 @@ public static class Program
 
     public static void LevelUp(this Hero hero)
     {
-        var rule = new Rule("[red]You Level Up![/]") { Justification = Justify.Left };
+        var rule = new Rule("[green]You Level Up![/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
         hero.Level += 1;
@@ -351,6 +355,11 @@ public static class Program
             {
                 hero.Gold -= (int)purchase.Value;
                 merchantInventory.Remove(purchase.Key);
+                if (merchantInventory.Count == 1)
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"You've cleared me out. "
+                            + "Guess I'll head back to the city to restock.\"[/]"
+                    );
             }
 
             if (purchase.Key == "Shield")
@@ -491,25 +500,25 @@ public static class Program
         string inventoryString = "";
 
         if (hero.DamageDie == 6)
-            inventoryString += "  Short Sword (d6)";
+            inventoryString += "  Short Sword (d6)\n";
         if (hero.IsShielded)
-            inventoryString += "\n  Shield";
+            inventoryString += "  Shield (1/5 chance to deflect attack)\n";
         if (hero.ArmorDie == 4)
-            inventoryString += "\n  Leather Armor (-d4)";
+            inventoryString += "  Leather Armor (-d4)\n";
         if (hero.DamageDie == 8)
-            inventoryString = "\n  Morning Star (d8)";
+            inventoryString = "  Morning Star (d8)\n";
         if (hero.ArmorDie == 6)
-            inventoryString = "\n  Chain Mail (-d6)";
+            inventoryString = "  Chain Mail (-d6)\n";
         if (hero.DamageDie == 10)
-            inventoryString = "\n  Claymore (d10)";
+            inventoryString = "  Claymore (d10)\n";
         if (hero.ArmorDie == 8)
-            inventoryString = "\n  Scale Armor (-d8)";
+            inventoryString = "  Scale Armor (-d8)\n";
         if (hero.DamageDie == 12)
-            inventoryString = "\n  Lucerne (d12)";
+            inventoryString = "  Lucerne (d12)\n";
         if (hero.ArmorDie == 10)
-            inventoryString = "\n  Plate Armor (-d10)";
+            inventoryString = "  Plate Armor (-d10)\n";
 
-        AnsiConsole.WriteLine($"{inventoryString}");
+        AnsiConsole.Write($"{inventoryString}");
 
         Thread.Sleep(250);
         Console.WriteLine();
@@ -528,41 +537,22 @@ public static class Program
         felledFoes.AddColumn("Foe");
         felledFoes.AddColumn("Count");
 
-        if (hero.FoesFelled.Exists(x => x.Name == "Goblin"))
+        for (int i = 0; i < Foes.Count; i++)
         {
-            felledFoes.AddRow(
-                new Text("Goblins:"),
-                new Text(hero.FoesFelled.Count(x => x.Name == "Goblin").ToString())
-            );
-        }
+            Creature foe = Foes[i];
 
-        if (hero.FoesFelled.Exists(x => x.Name == "Cultist"))
-        {
-            felledFoes.AddRow(
-                new Text("Cultists:"),
-                new Text(hero.FoesFelled.Count(x => x.Name == "Cultist").ToString())
-            );
-        }
-
-        if (hero.FoesFelled.Exists(x => x.Name == "Manticore"))
-        {
-            felledFoes.AddRow(
-                new Text("Manticores:"),
-                new Text(hero.FoesFelled.Count(x => x.Name == "Manticore").ToString())
-            );
-        }
-
-        if (hero.FoesFelled.Exists(x => x.Name == "Lich"))
-        {
-            felledFoes.AddRow(
-                new Text("Lichs:"),
-                new Text(hero.FoesFelled.Count(x => x.Name == "Lich").ToString())
-            );
+            if (hero.FoesFelled.Exists(x => x.Name == foe.Name))
+            {
+                felledFoes.AddRow(
+                    new Text($"{foe.Name}s:"),
+                    new Text(hero.FoesFelled.Count(x => x.Name == foe.Name).ToString())
+                );
+            }
         }
         AnsiConsole.Write(felledFoes);
     }
 
-    public static void PrintDeathReport(this Hero hero)
+    public static void PrintDeathReport(this Hero hero, Creature killer)
     {
         var rule = new Rule("Death") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
@@ -573,6 +563,8 @@ public static class Program
         );
 
         hero.PrintFelledFoes();
+
+        AnsiConsole.MarkupLine($"Slain by a [{killer.Color}]{killer.Name}[/].\n");
 
         AnsiConsole.MarkupLine($"Rest in peace, [{hero.Color}]{hero.Name}[/].\n");
     }
