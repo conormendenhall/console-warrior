@@ -12,7 +12,7 @@ public static class Program
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
         string heroName = string.IsNullOrWhiteSpace(nameInput) ? "Nameless Warrior" : nameInput;
-        
+
         var hero = RefreshHero(heroName);
         Dictionary<string, int?> merchantInventory = RefreshMerchantInventory();
 
@@ -53,14 +53,19 @@ public static class Program
     }
 
     public static Hero RefreshHero(string heroName) =>
-        new(name: heroName, color: "red", maxHP: 5, attackDie: 6);
+        new(name: heroName, color: "red", maxHP: 5, damageDie: 6);
 
     public static Dictionary<string, int?> RefreshMerchantInventory() =>
         new()
         {
-            { "Leather Armor", 8 },
-            { "Shield", 10 },
+            { "Shield", 8 },
+            { "Leather Armor", 10 },
             { "Morning Star", 12 },
+            { "Chain Mail", 14 },
+            { "Claymore", 16 },
+            { "Scale Armor", 16 },
+            { "Lucerne", 18 },
+            { "Plate Armor", 20 },
             { "None", null }
         };
 
@@ -73,21 +78,21 @@ public static class Program
 
     public static List<Creature> Foes =>
         [
-            new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 3, level: 1),
-            new Creature(name: "Cultist", color: "orangered1", maxHP: 8, attackDie: 6, level: 2),
+            new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, damageDie: 3, level: 1),
+            new Creature(name: "Cultist", color: "orangered1", maxHP: 8, damageDie: 6, level: 2),
             new Creature(
                 name: "Manticore",
                 color: "darkgoldenrod",
                 maxHP: 15,
-                attackDie: 9,
+                damageDie: 9,
                 level: 3
             ),
-            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, attackDie: 12, level: 5),
+            new Creature(name: "Lich", color: "royalblue1", maxHP: 18, damageDie: 12, level: 5),
             new Creature(
                 name: "Leviathan",
                 color: "red",
                 maxHP: 50,
-                attackDie: 35,
+                damageDie: 35,
                 level: int.MaxValue
             ),
         ];
@@ -131,12 +136,12 @@ public static class Program
             return 0;
         }
 
-        int atkDmg = rdm.Next(1, attacker.AttackDie + 1);
+        int atkDmg = rdm.Next(1, attacker.DamageDie + 1);
         int dmgReduction = 0;
 
-        if (defender.IsArmored)
+        if (defender.ArmorDie > 0)
         {
-            dmgReduction = rdm.Next(1, 5);
+            dmgReduction = rdm.Next(1, defender.ArmorDie + 1);
             atkDmg = Math.Max(atkDmg - dmgReduction, 0);
 
             if (atkDmg <= 0)
@@ -228,11 +233,11 @@ public static class Program
                     AnsiConsole.MarkupLine($"[{hero.Color}]{hero.Name}[/] stands victorious!");
 
                     hero.FoesFelled.Add(foe);
-                    hero.Experience += foe.MaxHP + foe.AttackDie;
+                    hero.Experience += foe.MaxHP + foe.DamageDie;
 
                     Thread.Sleep(500);
                     AnsiConsole.MarkupLine(
-                        $"[grey][[You gain {foe.MaxHP + foe.AttackDie} XP "
+                        $"[grey][[You gain {foe.MaxHP + foe.DamageDie} XP "
                             + $"for a total {hero.Experience} XP, next level at {hero.LevelXP} XP]][/]\n"
                     );
 
@@ -348,16 +353,7 @@ public static class Program
                 merchantInventory.Remove(purchase.Key);
             }
 
-            if (purchase.Key == "Leather Armor")
-            {
-                hero.IsArmored = true;
-                Console.WriteLine("You don the leather armor.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine(
-                    "[purple_1]\"You think this will protect you? Good luck.\"[/]"
-                );
-            }
-            else if (purchase.Key == "Shield")
+            if (purchase.Key == "Shield")
             {
                 hero.IsShielded = true;
                 Console.WriteLine("You lift the shield.");
@@ -366,15 +362,56 @@ public static class Program
                     "[purple_1]\"Ah, the trusty shield. May it guard you well\"[/]"
                 );
             }
-            else if (purchase.Key == "Morning Star")
+            else if (purchase.Key == "Leather Armor")
             {
-                hero.AttackDie = 8;
-                hero.CarriesMorningStar = true;
-                Console.WriteLine("You heft the morning star.");
+                hero.ArmorDie = 4;
+                Console.WriteLine("You don the leather armor.");
                 Thread.Sleep(500);
                 AnsiConsole.MarkupLine(
-                    "[purple_1]\"So, you lust for blood. Heh heh... Strike true, warrior.\"[/]"
+                    "[purple_1]\"You think this will protect you? Good luck.\"[/]"
                 );
+            }
+            else if (purchase.Key == "Morning Star")
+            {
+                hero.DamageDie = 8;
+                Console.WriteLine("You heft the morning star.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\"So, you lust for blood. Heh heh...\"[/]");
+            }
+            else if (purchase.Key == "Chain Mail")
+            {
+                hero.ArmorDie = 6;
+                Console.WriteLine("You don the chain armor.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\"See these links? They hold strong.\"[/]");
+            }
+            else if (purchase.Key == "Claymore")
+            {
+                hero.DamageDie = 10;
+                Console.WriteLine("You raise the claymore.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\" Strike true, warrior.\"[/]");
+            }
+            else if (purchase.Key == "Scale Armor")
+            {
+                hero.ArmorDie = 8;
+                Console.WriteLine("You don the scale armor.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\"Ah, look how it shimmers. Heh...\"[/]");
+            }
+            else if (purchase.Key == "Lucerne")
+            {
+                hero.DamageDie = 12;
+                Console.WriteLine("You grip the lucerne.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\"Be careful where you swing that thing.\"[/]");
+            }
+            else if (purchase.Key == "Plate Armor")
+            {
+                hero.ArmorDie = 10;
+                Console.WriteLine("You don the plate armor.");
+                Thread.Sleep(500);
+                AnsiConsole.MarkupLine("[purple_1]\"This steel is nigh impenetrable.\"[/]");
             }
             Thread.Sleep(500);
             AnsiConsole.MarkupLine(
@@ -451,14 +488,26 @@ public static class Program
 
         Thread.Sleep(250);
         Console.WriteLine("Inventory:");
-        var inventoryString = "  Short Sword (d6)";
+        string inventoryString = "";
 
-        if (hero.CarriesMorningStar)
-            inventoryString = "\n  Morning Star (d8)";
-        if (hero.IsArmored)
-            inventoryString += "\n  Leather Armor (-d4)";
+        if (hero.DamageDie == 6)
+            inventoryString += "  Short Sword (d6)";
         if (hero.IsShielded)
             inventoryString += "\n  Shield";
+        if (hero.ArmorDie == 4)
+            inventoryString += "\n  Leather Armor (-d4)";
+        if (hero.DamageDie == 8)
+            inventoryString = "\n  Morning Star (d8)";
+        if (hero.ArmorDie == 6)
+            inventoryString = "\n  Chain Mail (-d6)";
+        if (hero.DamageDie == 10)
+            inventoryString = "\n  Claymore (d10)";
+        if (hero.ArmorDie == 8)
+            inventoryString = "\n  Scale Armor (-d8)";
+        if (hero.DamageDie == 12)
+            inventoryString = "\n  Lucerne (d12)";
+        if (hero.ArmorDie == 10)
+            inventoryString = "\n  Plate Armor (-d10)";
 
         AnsiConsole.WriteLine($"{inventoryString}");
 
@@ -529,25 +578,24 @@ public static class Program
     }
 }
 
-public class Creature(string name, string color, int maxHP, int attackDie, int level = 1)
+public class Creature(string name, string color, int maxHP, int damageDie, int level = 1)
 {
     public string Name { get; set; } = name;
     public string Color { get; set; } = color;
     public int HP { get; set; } = maxHP;
     public int MaxHP { get; set; } = maxHP;
-    public int AttackDie { get; set; } = attackDie;
-    public int LootDie { get; set; } = maxHP + attackDie;
-    public bool IsArmored { get; set; } = false;
+    public int DamageDie { get; set; } = damageDie;
+    public int LootDie { get; set; } = maxHP + damageDie;
+    public int ArmorDie { get; set; } = 0;
     public bool IsShielded { get; set; } = false;
     public int Level { get; set; } = level;
 }
 
-public class Hero(string name, string color, int maxHP, int attackDie)
-    : Creature(name, color, maxHP, attackDie)
+public class Hero(string name, string color, int maxHP, int damageDie)
+    : Creature(name, color, maxHP, damageDie)
 {
     public int Experience { get; set; } = 0;
     public int LevelXP { get; set; } = 20;
     public int Gold { get; set; } = 0;
     public List<Creature> FoesFelled { get; set; } = [];
-    public bool CarriesMorningStar { get; set; } = false;
 }
