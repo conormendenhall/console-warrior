@@ -77,7 +77,7 @@ public static class Program
 
     public static List<Creature> Foes =>
         [
-            new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 4, level: 1),
+            new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, attackDie: 3, level: 1),
             new Creature(name: "Cultist", color: "orangered1", maxHP: 8, attackDie: 6, level: 2),
             new Creature(
                 name: "Manticore",
@@ -124,7 +124,7 @@ public static class Program
     {
         Random rdm = new();
 
-        bool miss = defender.IsShielded && rdm.Next(1, 6) == 1;
+        bool miss = defender.IsShielded && rdm.Next(1, 5) == 1;
 
         if (miss)
         {
@@ -147,7 +147,7 @@ public static class Program
             {
                 AnsiConsole.MarkupLine(
                     $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
-                        + "armor negates all damage]][/]"
+                        + "armor negated all damage]][/]"
                 );
                 return 0;
             }
@@ -174,8 +174,6 @@ public static class Program
         Console.WriteLine();
         AnsiConsole.MarkupLine($"[red]{atkDmg}[/] damage\n");
 
-        defender.LiveHealthBar(oldHP);
-
         if (dmgReduction > 0)
         {
             Thread.Sleep(500);
@@ -184,6 +182,7 @@ public static class Program
                     + $"armor reduced damage by {dmgReduction}]][/]"
             );
         }
+        defender.LiveHealthBar(oldHP);
 
         return atkDmg;
     }
@@ -202,7 +201,6 @@ public static class Program
             AnsiConsole.MarkupLine($"You strike the [{foe.Color}]{foe.Name}[/] first!\n");
         else
             AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] gets the drop on you!\n");
-        Thread.Sleep(500);
 
         Creature attacker = heroAttacksFirst ? hero : foe;
         Creature defender = heroAttacksFirst ? foe : hero;
@@ -469,6 +467,7 @@ public static class Program
         AnsiConsole.WriteLine($"{inventoryString}");
 
         Thread.Sleep(250);
+        Console.WriteLine();
         AnsiConsole.WriteLine($"{hero.FoesFelled.Count} foes vanquished");
 
         Thread.Sleep(250);
