@@ -546,7 +546,7 @@ public static class Program
             if (hero.FoesFelled.Exists(x => x.Name == foe.Name))
             {
                 felledFoes.AddRow(
-                    new Text($"{foe.Name}s:"),
+                    new Text($"{foe.PluralName}:"),
                     new Text(hero.FoesFelled.Count(x => x.Name == foe.Name).ToString())
                 );
             }
@@ -575,6 +575,7 @@ public static class Program
 public class Creature(string name, string color, int maxHP, int damageDie, int level = 1)
 {
     public string Name { get; set; } = name;
+    public string PluralName { get; set; } = name == "Cyclops" ? "Cyclopes" : name + "s";
     public string Color { get; set; } = color;
     public int HP { get; set; } = maxHP;
     public int MaxHP { get; set; } = maxHP;
