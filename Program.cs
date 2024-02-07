@@ -18,17 +18,19 @@ public static class Program
 
         AnsiConsole.MarkupLine($"Well met, [{hero.Color}]{hero.Name}[/].\n");
 
+        Random rdm = new();
+
         do
         {
             SelectPrompt("Venture forth");
-            Creature foe = GetFoe(hero.Level);
-            bool heroSurvives = hero.Encounter(foe);
+            Creature foe = GetFoe(hero.Level, rdm);
+            bool heroSurvives = hero.Encounter(foe, rdm);
 
             if (heroSurvives)
             {
                 if (hero.HP < hero.MaxHP)
                 {
-                    hero.Rest();
+                    hero.Rest(rdm);
                 }
                 if (merchantInventory.Count > 1)
                     hero.VisitMerchant(merchantInventory);
@@ -78,19 +80,18 @@ public static class Program
     public static List<Creature> Foes =>
         [
             new Creature(name: "Goblin", color: "chartreuse3", maxHP: 5, damageDie: 3, level: 1),
-            new Creature(name: "Skeleton", color: "grey", maxHP: 5, damageDie: 5, level: 2),
-            new Creature(name: "Brigand", color: "orange4", maxHP: 6, damageDie: 7, level: 3),
-            new Creature(name: "Cultist", color: "orangered1", maxHP: 7, damageDie: 9, level: 4),
-            new Creature(name: "Cyclops", color: "turquoise4", maxHP: 10, damageDie: 9, level: 5),
-            new Creature(name: "Hag", color: "rosybrown", maxHP: 13, damageDie: 10, level: 6),
-            new Creature(
-                name: "Manticore",
-                color: "darkgoldenrod",
-                maxHP: 16,
-                damageDie: 11,
-                level: 7
-            ),
-            new Creature(name: "Lich", color: "royalblue1", maxHP: 19, damageDie: 13, level: 8),
+            new Creature(name: "Skeleton", color: "grey", maxHP: 6, damageDie: 5, level: 2),
+            new Creature(name: "Brigand", color: "orange4", maxHP: 8, damageDie: 6, level: 3),
+            new Creature(name: "Cultist", color: "orangered1", maxHP: 6, damageDie: 8, level: 3),
+            new Creature(name: "Hag", color: "rosybrown", maxHP: 8, damageDie: 9, level: 4),
+            new Creature(name: "Manticore", color: "tan", maxHP: 12, damageDie: 8, level: 5),
+            new Creature(name: "Bog Shambler", color: "tan", maxHP: 14, damageDie: 6, level: 5),
+            new Creature(name: "Cyclops", color: "turquoise4", maxHP: 13, damageDie: 10, level: 6),
+            new Creature(name: "Demonoid", color: "darkmagenta", maxHP: 9, damageDie: 14, level: 6),
+            new Creature(name: "Warlock", color: "deeppink1", maxHP: 11, damageDie: 15, level: 7),
+            new Creature(name: "Vampire", color: "red3", maxHP: 13, damageDie: 13, level: 7),
+            new Creature(name: "Lich", color: "royalblue1", maxHP: 16, damageDie: 13, level: 8),
+            new Creature(name: "Wyvern", color: "teal", maxHP: 16, damageDie: 16, level: 9),
             new Creature(
                 name: "Leviathan",
                 color: "red",
@@ -100,16 +101,19 @@ public static class Program
             ),
         ];
 
-    public static Creature GetFoe(int heroLevel) =>
-        Foes.FirstOrDefault(x => x.Level >= heroLevel, Foes[^1]);
+    public static Creature GetFoe(int heroLevel, Random rdm)
+    {
+        return Foes.Where(x => Math.Abs(x.Level - heroLevel) < 2)
+            .OrderBy(x => rdm.Next())
+            .FirstOrDefault(Foes[^1]);
+    }
 
-    public static void Loot(this Hero hero, Creature corpse)
+    public static void Loot(this Hero hero, Creature corpse, Random rdm)
     {
         SelectPrompt("Loot");
         var rule = new Rule("Loot") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
-        Random rdm = new();
         var loot = rdm.Next(1, corpse.LootDie + 1);
 
         hero.Gold += loot;
@@ -188,14 +192,12 @@ public static class Program
         return atkDmg;
     }
 
-    public static bool Encounter(this Hero hero, Creature foe)
+    public static bool Encounter(this Hero hero, Creature foe, Random rdm)
     {
         var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
         Thread.Sleep(1000);
-
-        Random rdm = new();
 
         bool attackConfirmed = false;
         bool sneakSuccessful = rdm.Next(1, 4) == 1;
@@ -271,7 +273,7 @@ public static class Program
                     if (hero.Experience >= hero.LevelXP)
                         hero.LevelUp();
 
-                    hero.Loot(foe);
+                    hero.Loot(foe, rdm);
 
                     hero.PrintCharacterSheet();
 
@@ -324,14 +326,13 @@ public static class Program
         AnsiConsole.MarkupLine($"Your health maximum increases to [green]{hero.MaxHP} HP[/].\n");
     }
 
-    public static void Rest(this Hero hero)
+    public static void Rest(this Hero hero, Random rdm)
     {
         SelectPrompt("Rest");
         var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
         int oldHP = hero.HP;
-        Random rdm = new();
 
         int newHP = Math.Min(hero.HP + rdm.Next(1, 5), hero.MaxHP);
         int restHP = newHP - oldHP;
@@ -646,5 +647,5 @@ public class Hero(string name, string color, int maxHP, int damageDie)
     public int LevelXP { get; set; } = 20;
     public int Gold { get; set; } = 0;
     public List<Creature> FoesFelled { get; set; } = [];
-    public bool IsCloaked { get; set; } = true;
+    public bool IsCloaked { get; set; } = false;
 }
