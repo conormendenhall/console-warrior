@@ -12,16 +12,9 @@ public static class Program
             new TextPrompt<string>("What is your [red]name[/]?").AllowEmpty()
         );
         string heroName = string.IsNullOrWhiteSpace(nameInput) ? "Nameless Warrior" : nameInput;
-        var hero = GetFreshHero(heroName);
-
-        Dictionary<string, int?> merchantInventory =
-            new()
-            {
-                { "Leather Armor", 8 },
-                { "Shield", 10 },
-                { "Morning Star", 12 },
-                { "None", null }
-            };
+        
+        var hero = RefreshHero(heroName);
+        Dictionary<string, int?> merchantInventory = RefreshMerchantInventory();
 
         AnsiConsole.MarkupLine($"Well met, [{hero.Color}]{hero.Name}[/].\n");
 
@@ -49,14 +42,8 @@ public static class Program
                 hero.PrintDeathReport();
                 if (AnsiConsole.Confirm("Play again?"))
                 {
-                    hero = GetFreshHero(heroName);
-                    merchantInventory = new()
-                    {
-                        { "Leather Armor", 8 },
-                        { "Shield", 10 },
-                        { "Morning Star", 12 },
-                        { "None", null }
-                    };
+                    hero = RefreshHero(heroName);
+                    merchantInventory = RefreshMerchantInventory();
 
                     Console.WriteLine();
                     AnsiConsole.MarkupLine("[red]Hello again, warrior[/]\n");
@@ -65,8 +52,17 @@ public static class Program
         } while (hero.HP > 0);
     }
 
-    public static Hero GetFreshHero(string heroName) =>
+    public static Hero RefreshHero(string heroName) =>
         new(name: heroName, color: "red", maxHP: 5, attackDie: 6);
+
+    public static Dictionary<string, int?> RefreshMerchantInventory() =>
+        new()
+        {
+            { "Leather Armor", 8 },
+            { "Shield", 10 },
+            { "Morning Star", 12 },
+            { "None", null }
+        };
 
     public static Style SelectStyle => new Style().Foreground(Color.Red);
 
