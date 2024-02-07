@@ -85,7 +85,13 @@ public static class Program
             new Creature(name: "Cultist", color: "orangered1", maxHP: 6, damageDie: 8, level: 3),
             new Creature(name: "Hag", color: "rosybrown", maxHP: 8, damageDie: 9, level: 4),
             new Creature(name: "Manticore", color: "tan", maxHP: 12, damageDie: 8, level: 5),
-            new Creature(name: "Bog Shambler", color: "tan", maxHP: 14, damageDie: 6, level: 5),
+            new Creature(
+                name: "Bog Shambler",
+                color: "chartreuse4",
+                maxHP: 14,
+                damageDie: 6,
+                level: 5
+            ),
             new Creature(name: "Cyclops", color: "turquoise4", maxHP: 13, damageDie: 10, level: 6),
             new Creature(name: "Demonoid", color: "darkmagenta", maxHP: 9, damageDie: 14, level: 6),
             new Creature(name: "Warlock", color: "deeppink1", maxHP: 11, damageDie: 15, level: 7),
@@ -194,7 +200,7 @@ public static class Program
 
     public static bool Encounter(this Hero hero, Creature foe, Random rdm)
     {
-        var rule = new Rule($"[{foe.Color}]{foe.Name} Battle[/]") { Justification = Justify.Left };
+        var rule = new Rule($"[{foe.Color}]{foe.Name}[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine($"You encounter a [{foe.Color}]{foe.Name}[/].\n");
         Thread.Sleep(1000);
