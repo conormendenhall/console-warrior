@@ -392,7 +392,9 @@ public static class Program
                 hero.ArmorDie = 6;
                 Console.WriteLine("You don the chain armor.");
                 Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\"See these links? They hold strong.\"[/]");
+                AnsiConsole.MarkupLine(
+                    "[purple_1]\"See these links? They may save your hide.\"[/]"
+                );
             }
             else if (purchase.Key == "Claymore")
             {
@@ -502,7 +504,7 @@ public static class Program
         if (hero.DamageDie == 6)
             inventoryString += "  Short Sword (d6)\n";
         if (hero.IsShielded)
-            inventoryString += "  Shield (1/5 chance to deflect attack)\n";
+            inventoryString += "  Shield (1 in 5 chance to deflect attack)\n";
         if (hero.ArmorDie == 4)
             inventoryString += "  Leather Armor (-d4)\n";
         if (hero.DamageDie == 8)
