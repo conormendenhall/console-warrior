@@ -20,16 +20,12 @@ public static class Program
 
         do
         {
-            Pause("Venture forth");
+            SelectPrompt("Venture forth");
             Creature foe = GetFoe(hero.Level);
             bool heroSurvives = hero.Encounter(foe);
 
             if (heroSurvives)
             {
-                hero.Loot(foe);
-
-                hero.PrintCharacterSheet();
-
                 if (hero.HP < hero.MaxHP)
                 {
                     hero.Rest();
@@ -66,15 +62,18 @@ public static class Program
             { "Scale Armor", 16 },
             { "Lucerne", 18 },
             { "Plate Armor", 20 },
+            { "Cloak of Invisibility", 40 },
             { "None", null }
         };
 
     public static Style SelectStyle => new Style().Foreground(Color.Red);
 
-    public static void Pause(string prompt = "Proceed") =>
-        AnsiConsole.Prompt(
-            new SelectionPrompt<string>().HighlightStyle(SelectStyle).AddChoices(prompt)
-        );
+    public static bool SelectPrompt(string prompt = "Proceed")
+    {
+        return AnsiConsole.Prompt(
+                new SelectionPrompt<string>().HighlightStyle(SelectStyle).AddChoices(prompt)
+            ) == prompt;
+    }
 
     public static List<Creature> Foes =>
         [
@@ -106,7 +105,7 @@ public static class Program
 
     public static void Loot(this Hero hero, Creature corpse)
     {
-        Pause("Loot");
+        SelectPrompt("Loot");
         var rule = new Rule("Loot") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
@@ -151,8 +150,8 @@ public static class Program
             if (atkDmg <= 0)
             {
                 AnsiConsole.MarkupLine(
-                    $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
-                        + "armor negated all damage]][/]"
+                    $"The [{attacker.Color}]{attacker.Name}[/] strikes! "
+                        + $"But, the blow is deflected by your armor."
                 );
                 return 0;
             }
@@ -176,17 +175,14 @@ public static class Program
                 }
             );
 
-        Console.WriteLine();
-        AnsiConsole.MarkupLine($"[red]{atkDmg}[/] damage\n");
-
-        if (dmgReduction > 0)
-        {
-            Thread.Sleep(500);
-            AnsiConsole.MarkupLine(
-                $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
+        string reductionMessage =
+            dmgReduction > 0
+                ? $"[grey][[[/][{defender.Color}]{defender.Name}[/][grey]'s "
                     + $"armor reduced damage by {dmgReduction}]][/]"
-            );
-        }
+                : "";
+        Console.WriteLine();
+        AnsiConsole.MarkupLine($"[red]{atkDmg}[/] damage {reductionMessage}\n");
+
         defender.LiveHealthBar(oldHP);
 
         return atkDmg;
@@ -200,23 +196,50 @@ public static class Program
         Thread.Sleep(1000);
 
         Random rdm = new();
-        var heroAttacksFirst = rdm.Next(2) == 1;
 
-        if (heroAttacksFirst)
-            AnsiConsole.MarkupLine($"You strike the [{foe.Color}]{foe.Name}[/] first!\n");
+        bool attackConfirmed = false;
+        bool sneakSuccessful = rdm.Next(1, 4) == 1;
+
+        if (hero.IsCloaked && sneakSuccessful)
+        {
+            AnsiConsole.MarkupLine(
+                $"Your cloak allows you approach the [{foe.Color}]{foe.Name}[/] unseen.\n"
+            );
+
+            if (
+                AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .HighlightStyle(SelectStyle)
+                        .AddChoices("Attack", "Sneak past")
+                ) == "Sneak past"
+            )
+            {
+                AnsiConsole.MarkupLine($"You slip past the [{foe.Color}]{foe.Name}[/].\n");
+                return true;
+            }
+            else
+                attackConfirmed = true;
+        }
+
+        bool ambushed = !hero.IsCloaked && rdm.Next(2) == 1;
+
+        if (hero.IsCloaked && !attackConfirmed && SelectPrompt("Attack"))
+            AnsiConsole.MarkupLine($"From the shadows, you make a sneak attack!\n");
+        else if (ambushed)
+            AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] ambushes you!\n");
         else
-            AnsiConsole.MarkupLine($"The [{foe.Color}]{foe.Name}[/] gets the drop on you!\n");
+            AnsiConsole.MarkupLine($"You strike first!\n");
 
-        Creature attacker = heroAttacksFirst ? hero : foe;
-        Creature defender = heroAttacksFirst ? foe : hero;
+        Creature attacker = ambushed ? foe : hero;
+        Creature defender = ambushed ? hero : foe;
 
-        bool heroAttacking = heroAttacksFirst;
+        bool heroAttacking = !ambushed;
 
         while (foe.HP > 0 && hero.HP > 0)
         {
-            if (heroAttacking)
+            if (heroAttacking && !hero.IsCloaked)
             {
-                Pause("Attack");
+                SelectPrompt("Attack");
             }
             int atkDmg = attacker.Attack(defender);
             Console.WriteLine();
@@ -248,6 +271,10 @@ public static class Program
                     if (hero.Experience >= hero.LevelXP)
                         hero.LevelUp();
 
+                    hero.Loot(foe);
+
+                    hero.PrintCharacterSheet();
+
                     return true;
                 }
             }
@@ -258,7 +285,7 @@ public static class Program
                     AnsiConsole.MarkupLine(
                         $"The [{foe.Color}]{foe.Name}[/] still stands, sneering at you.\n"
                     );
-                    Pause("End turn");
+                    SelectPrompt("End turn");
                 }
                 else
                 {
@@ -299,7 +326,7 @@ public static class Program
 
     public static void Rest(this Hero hero)
     {
-        Pause("Rest");
+        SelectPrompt("Rest");
         var rule = new Rule("[dodgerblue1]Rest[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
 
@@ -321,7 +348,7 @@ public static class Program
 
     public static void VisitMerchant(this Hero hero, Dictionary<string, int?> merchantInventory)
     {
-        Pause("Trade");
+        SelectPrompt("Trade");
         var rule = new Rule("[purple_1]Merchant[/]") { Justification = Justify.Left };
         AnsiConsole.Write(rule);
         AnsiConsole.MarkupLine("You encounter a [purple_1]Merchant[/].");
@@ -355,80 +382,86 @@ public static class Program
             {
                 hero.Gold -= (int)purchase.Value;
                 merchantInventory.Remove(purchase.Key);
-                if (merchantInventory.Count == 1)
-                    AnsiConsole.MarkupLine(
-                        "[purple_1]\"You've cleared me out. "
-                            + "Guess I'll head back to the city to restock.\"[/]"
-                    );
             }
 
-            if (purchase.Key == "Shield")
+            switch (purchase.Key)
             {
-                hero.IsShielded = true;
-                Console.WriteLine("You lift the shield.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine(
-                    "[purple_1]\"Ah, the trusty shield. May it guard you well\"[/]"
-                );
-            }
-            else if (purchase.Key == "Leather Armor")
-            {
-                hero.ArmorDie = 4;
-                Console.WriteLine("You don the leather armor.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine(
-                    "[purple_1]\"You think this will protect you? Good luck.\"[/]"
-                );
-            }
-            else if (purchase.Key == "Morning Star")
-            {
-                hero.DamageDie = 8;
-                Console.WriteLine("You heft the morning star.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\"So, you lust for blood. Heh heh...\"[/]");
-            }
-            else if (purchase.Key == "Chain Mail")
-            {
-                hero.ArmorDie = 6;
-                Console.WriteLine("You don the chain armor.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine(
-                    "[purple_1]\"See these links? They may save your hide.\"[/]"
-                );
-            }
-            else if (purchase.Key == "Claymore")
-            {
-                hero.DamageDie = 10;
-                Console.WriteLine("You raise the claymore.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\" Strike true, warrior.\"[/]");
-            }
-            else if (purchase.Key == "Scale Armor")
-            {
-                hero.ArmorDie = 8;
-                Console.WriteLine("You don the scale armor.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\"Ah, look how it shimmers. Heh...\"[/]");
-            }
-            else if (purchase.Key == "Lucerne")
-            {
-                hero.DamageDie = 12;
-                Console.WriteLine("You grip the lucerne.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\"Be careful where you swing that thing.\"[/]");
-            }
-            else if (purchase.Key == "Plate Armor")
-            {
-                hero.ArmorDie = 10;
-                Console.WriteLine("You don the plate armor.");
-                Thread.Sleep(500);
-                AnsiConsole.MarkupLine("[purple_1]\"This steel is nigh impenetrable.\"[/]");
+                case "Shield":
+                    hero.IsShielded = true;
+                    Console.WriteLine("You lift the shield.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"Ah, the trusty shield. May it guard you well\"[/]"
+                    );
+                    break;
+                case "Leather Armor":
+                    hero.ArmorDie = 4;
+                    Console.WriteLine("You don the leather armor.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"You think this will protect you? Good luck.\"[/]"
+                    );
+                    break;
+                case "Morning Star":
+                    hero.DamageDie = 8;
+                    Console.WriteLine("You heft the morning star.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine("[purple_1]\"So, you lust for blood. Heh heh...\"[/]");
+                    break;
+                case "Chain Mail":
+                    hero.ArmorDie = 6;
+                    Console.WriteLine("You don the chain armor.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"See these links? They may save your hide.\"[/]"
+                    );
+                    break;
+                case "Claymore":
+                    hero.DamageDie = 10;
+                    Console.WriteLine("You raise the claymore.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine("[purple_1]\"Strike true, warrior.\"[/]");
+                    break;
+                case "Scale Armor":
+                    hero.ArmorDie = 8;
+                    Console.WriteLine("You don the scale armor.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine("[purple_1]\"Ah, look how it shimmers. Heh...\"[/]");
+                    break;
+                case "Lucerne":
+                    hero.DamageDie = 12;
+                    Console.WriteLine("You grip the lucerne.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"Be careful where you swing that thing.\"[/]"
+                    );
+                    break;
+                case "Plate Armor":
+                    hero.ArmorDie = 10;
+                    Console.WriteLine("You don the plate armor.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine("[purple_1]\"This steel is nigh impenetrable.\"[/]");
+                    break;
+                case "Cloak of Invisibility":
+                    hero.IsCloaked = true;
+                    Console.WriteLine("You wrap yourself in the cloak and slip into shadow.");
+                    Thread.Sleep(500);
+                    AnsiConsole.MarkupLine(
+                        "[purple_1]\"I wonder, what will you do when no one can see you?\"[/]"
+                    );
+                    break;
             }
             Thread.Sleep(500);
             AnsiConsole.MarkupLine(
                 $"[grey][[[/][{hero.Color}]{hero.Name}[/][grey] is left with[/] "
                     + $"[orange1]{hero.Gold} gold[/] [grey]pieces]][/]\n"
             );
+
+            if (merchantInventory.Count == 1)
+                AnsiConsole.MarkupLine(
+                    "[purple_1]\"You've cleared me out. "
+                        + "Guess I'll head back to the city to restock.\"[/]"
+                );
         }
     }
 
@@ -481,7 +514,7 @@ public static class Program
 
     public static void PrintCharacterSheet(this Hero hero)
     {
-        Pause("View character sheet");
+        SelectPrompt("View character sheet");
         var rule = new Rule($"[{hero.Color}]{hero.Name}[/] - Level {hero.Level}")
         {
             Justification = Justify.Left,
@@ -501,24 +534,44 @@ public static class Program
         Console.WriteLine("Inventory:");
         string inventoryString = "";
 
-        if (hero.DamageDie == 6)
-            inventoryString += "  Short Sword (d6)\n";
+        switch (hero.DamageDie)
+        {
+            case 6:
+                inventoryString += "  Short Sword (d6)\n";
+                break;
+            case 8:
+                inventoryString += "  Morning Star (d8)\n";
+                break;
+            case 10:
+                inventoryString += "  Claymore (d10)\n";
+                break;
+            case 12:
+                inventoryString += "  Lucerne (d12)\n";
+                break;
+        }
+
+        switch (hero.ArmorDie)
+        {
+            case 4:
+                inventoryString += "  Leather Armor (-d4)\n";
+                break;
+            case 6:
+                inventoryString += "  Chain Mail (-d6)\n";
+                break;
+            case 8:
+                inventoryString += "  Scale Armor (-d8)\n";
+                break;
+            case 10:
+                inventoryString += "  Plate Armor (-d10)\n";
+                break;
+        }
+
         if (hero.IsShielded)
             inventoryString += "  Shield (1 in 5 chance to deflect attack)\n";
-        if (hero.ArmorDie == 4)
-            inventoryString += "  Leather Armor (-d4)\n";
-        if (hero.DamageDie == 8)
-            inventoryString = "  Morning Star (d8)\n";
-        if (hero.ArmorDie == 6)
-            inventoryString = "  Chain Mail (-d6)\n";
-        if (hero.DamageDie == 10)
-            inventoryString = "  Claymore (d10)\n";
-        if (hero.ArmorDie == 8)
-            inventoryString = "  Scale Armor (-d8)\n";
-        if (hero.DamageDie == 12)
-            inventoryString = "  Lucerne (d12)\n";
-        if (hero.ArmorDie == 10)
-            inventoryString = "  Plate Armor (-d10)\n";
+
+        if (hero.IsCloaked)
+            inventoryString +=
+                "  Cloak (1 in 3 chance to pass undetected, and can't be ambushed)\n";
 
         AnsiConsole.Write($"{inventoryString}");
 
@@ -593,4 +646,5 @@ public class Hero(string name, string color, int maxHP, int damageDie)
     public int LevelXP { get; set; } = 20;
     public int Gold { get; set; } = 0;
     public List<Creature> FoesFelled { get; set; } = [];
+    public bool IsCloaked { get; set; } = true;
 }
